@@ -166,8 +166,8 @@ export default function FiveWOneHCard({ data, conceptName }: FiveWOneHCardProps)
     if (!text) return null
 
     const lines = text.split('\n')
-    const elements: JSX.Element[] = []
-    let currentList: JSX.Element[] = []
+    const elements: React.ReactElement[] = []
+    let currentList: React.ReactElement[] = []
     let inList = false
 
     lines.forEach((line, index) => {
