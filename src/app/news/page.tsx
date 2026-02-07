@@ -221,11 +221,224 @@ export default function NewsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 text-[#e8a87c] animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">正在加载资讯...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden bg-gradient-to-b from-[#0f172a] via-[#1e293b] to-[#0f172a]">
+        {/* 动态背景 */}
+        <div className="absolute inset-0 overflow-hidden">
+          {[...Array(15)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full"
+              style={{
+                width: 20 + Math.random() * 60,
+                height: 20 + Math.random() * 60,
+                background: `radial-gradient(circle at 30% 30%, ${['#e8a87c', '#85dcb8', '#c38d9e', '#41b3a3', '#e27d60'][i % 5]}30, transparent)`,
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`
+              }}
+              animate={{
+                y: [0, -30, 0],
+                x: [0, Math.random() * 20 - 10, 0],
+                scale: [1, 1.2, 1],
+                opacity: [0.2, 0.5, 0.2]
+              }}
+              transition={{
+                duration: 4 + Math.random() * 3,
+                repeat: Infinity,
+                delay: Math.random() * 2,
+                ease: 'easeInOut'
+              }}
+            />
+          ))}
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center relative z-10"
+        >
+          {/* 超大加载动画 */}
+          <div className="relative w-64 h-64 mx-auto mb-10">
+            {/* 外圈旋转 */}
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+              className="absolute inset-0"
+            >
+              {[...Array(8)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute text-3xl"
+                  style={{
+                    left: '50%',
+                    top: '50%',
+                    transform: `rotate(${i * 45}deg) translateY(-130px) translateX(-50%)`
+                  }}
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: i * 0.15 }}
+                >
+                  {['📰', '✨', '💡', '🚀', '⭐', '📡', '🌐', '🔔'][i]}
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* 主圆形背景 */}
+            <motion.div
+              animate={{
+                scale: [1, 1.05, 1],
+                rotate: [0, 5, -5, 0]
+              }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute inset-4 rounded-full bg-gradient-to-br from-[#e8a87c]/30 via-[#85dcb8]/20 to-[#c38d9e]/30 border-4 border-[#e8a87c]/50"
+              style={{
+                boxShadow: '0 0 80px rgba(232, 168, 124, 0.4), inset 0 0 40px rgba(255, 255, 255, 0.1)'
+              }}
+            />
+
+            {/* 中心图标 */}
+            <motion.div
+              animate={{
+                y: [0, -15, 0],
+                rotate: [-5, 5, -5]
+              }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute inset-0 flex items-center justify-center"
+            >
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="text-8xl"
+              >
+                📰
+              </motion.div>
+            </motion.div>
+
+            {/* 旋转的小图标 */}
+            <motion.div
+              animate={{ rotate: -360 }}
+              transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+              className="absolute inset-0"
+            >
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 text-3xl">✨</div>
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-3xl">💫</div>
+              <div className="absolute left-2 top-1/2 -translate-y-1/2 text-2xl">⭐</div>
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 text-2xl">🌟</div>
+            </motion.div>
+
+            {/* 飘浮的资讯符号 */}
+            {[...Array(5)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute text-2xl"
+                style={{
+                  left: `${20 + i * 15}%`,
+                  top: '50%'
+                }}
+                animate={{
+                  y: [0, -40, 0],
+                  x: [0, Math.sin(i) * 20, 0],
+                  opacity: [0, 1, 0],
+                  scale: [0.5, 1, 0.5]
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  delay: i * 0.6,
+                  ease: 'easeOut'
+                }}
+              >
+                {['📱', '💻', '📊', '📈', '🔍'][i]}
+              </motion.div>
+            ))}
+          </div>
+
+          {/* 主标题 */}
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="text-4xl font-black text-white mb-4"
+          >
+            <span className="bg-gradient-to-r from-[#e8a87c] via-[#85dcb8] to-[#c38d9e] bg-clip-text text-transparent">
+              正在加载资讯
+            </span>
+            <motion.span
+              animate={{ rotate: [0, 20, -20, 0] }}
+              transition={{ duration: 1, repeat: Infinity, delay: 1 }}
+              className="inline-block ml-3"
+            >
+              ✨
+            </motion.span>
+          </motion.h2>
+
+          {/* 副标题 */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-lg text-white/70 mb-8"
+          >
+            AI 正在为你搜集最新的 AI 资讯...
+          </motion.p>
+
+          {/* 随机激励话语 */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.7 }}
+            className="inline-block"
+          >
+            <motion.div
+              animate={{ y: [0, -5, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              className="px-8 py-4 rounded-2xl bg-gradient-to-r from-[#e8a87c]/30 via-[#85dcb8]/30 to-[#c38d9e]/30 border-2 border-[#e8a87c]/50 backdrop-blur-sm"
+              style={{
+                boxShadow: '0 8px 32px rgba(232, 168, 124, 0.3)'
+              }}
+            >
+              <span className="text-lg font-bold text-[#e8a87c]">
+                {(() => {
+                  const messages = [
+                    '📡 资讯雷达已开启，正在扫描全球...',
+                    '🚀 最新 AI 动态正在光速飞来...',
+                    '🔍 正在挖掘最有价值的行业洞察...',
+                    '✨ 精彩内容即将呈现，请稍候...',
+                    '📰 头条新闻正在排队加载中...',
+                    '💡 智慧火花正在汇聚成资讯...',
+                    '🌐 全球 AI 资讯正在同步更新...',
+                    '⭐ 精选内容正在为你筛选中...',
+                    '📊 数据分析中，马上呈现...',
+                    '🎯 精准匹配你的职业兴趣...'
+                  ]
+                  return messages[Math.floor(Math.random() * messages.length)]
+                })()}
+              </span>
+            </motion.div>
+          </motion.div>
+
+          {/* 加载进度 */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.9 }}
+            className="flex justify-center gap-3 mt-10"
+          >
+            {[...Array(3)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="w-3 h-3 rounded-full bg-[#e8a87c]"
+                animate={{
+                  scale: [1, 1.5, 1],
+                  opacity: [0.5, 1, 0.5]
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: i * 0.3
+                }}
+              />
+            ))}
+          </motion.div>
+        </motion.div>
       </div>
     )
   }

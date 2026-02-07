@@ -371,6 +371,30 @@ export default function FeynmanPage() {
           )}
         </div>
 
+        {/* 知识点引导话语 */}
+        {!isComplete && currentRound === 1 && messages.length === 1 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-card p-4 mb-4 border-[#85dcb8]/30 bg-[#85dcb8]/10"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full bg-[#85dcb8]/20 flex items-center justify-center flex-shrink-0">
+                <GraduationCap className="w-5 h-5 text-[#85dcb8]" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[#85dcb8] font-medium text-sm mb-1">
+                  💡 费曼学习法小贴士
+                </p>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  试着用<span className="text-[#e8a87c] font-medium">最简单的语言</span>向一个<span className="text-[#e8a87c] font-medium">完全不懂编程的朋友</span>解释「{conceptName}」。
+                  如果能让对方听懂，说明你真正掌握了这个概念！
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* 提示：连续不理解时显示 */}
         {showBackToLearn && !isComplete && (
           <motion.div

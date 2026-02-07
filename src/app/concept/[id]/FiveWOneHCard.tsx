@@ -279,81 +279,324 @@ export default function FiveWOneHCard({ data, conceptName }: FiveWOneHCardProps)
 
   return (
     <div className="relative">
-      {/* 全屏加载动画 - 点击卡片后显示 */}
+      {/* 全屏加载动画 - 点击卡片后显示 - 超大动画 + 100条随机激励话语 */}
       <AnimatePresence>
         {flippedCard && cardDetails[flippedCard]?.isLoading && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 flex items-center justify-center"
+            className="fixed inset-0 z-40 flex items-center justify-center overflow-hidden"
             style={{
-              background: 'rgba(0, 0, 0, 0.7)',
-              backdropFilter: 'blur(4px)'
+              background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
             }}
           >
+            {/* 动态背景光球 */}
+            <div className="absolute inset-0 overflow-hidden">
+              {[...Array(20)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute rounded-full"
+                  style={{
+                    width: 30 + Math.random() * 80,
+                    height: 30 + Math.random() * 80,
+                    background: `radial-gradient(circle at 30% 30%, ${cardConfig[flippedCard].color}40, transparent)`,
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`
+                  }}
+                  animate={{
+                    y: [0, -50, 0],
+                    x: [0, Math.random() * 30 - 15, 0],
+                    scale: [1, 1.3, 1],
+                    opacity: [0.1, 0.4, 0.1]
+                  }}
+                  transition={{
+                    duration: 5 + Math.random() * 4,
+                    repeat: Infinity,
+                    delay: Math.random() * 3,
+                    ease: 'easeInOut'
+                  }}
+                />
+              ))}
+            </div>
+
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
               transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-              className="text-center"
+              className="text-center relative z-10 px-4"
             >
-              {/* 可爱的思考动画 */}
-              <motion.div
-                animate={{ 
-                  y: [0, -20, 0],
-                  rotate: [-8, 8, -8, 8, 0]
-                }}
-                transition={{ 
-                  duration: 1.8,
-                  repeat: Infinity,
-                  ease: 'easeInOut'
-                }}
-                className="text-8xl mb-8"
-              >
-                {cardConfig[flippedCard].loadingIcon}
-              </motion.div>
-              
-              {/* 对话气泡 */}
-              <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ delay: 0.2 }}
-                className="relative inline-block mb-6"
-              >
-                <div 
-                  className="px-8 py-4 rounded-3xl text-white text-xl font-bold"
-                  style={{
-                    background: `linear-gradient(135deg, ${cardConfig[flippedCard].color} 0%, ${cardConfig[flippedCard].color}cc 100%)`,
-                    boxShadow: `0 10px 40px ${cardConfig[flippedCard].color}50, 0 0 60px ${cardConfig[flippedCard].color}30`
-                  }}
+              {/* 超大动画区域 */}
+              <div className="relative w-72 h-72 mx-auto mb-8">
+                {/* 外圈旋转装饰 */}
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
+                  className="absolute inset-0"
                 >
-                  {cardConfig[flippedCard].loadingText}
-                </div>
-                {/* 气泡小三角 */}
-                <div 
-                  className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-6 h-6 rotate-45"
-                  style={{ background: cardConfig[flippedCard].color }}
+                  {[...Array(8)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute text-4xl"
+                      style={{
+                        left: '50%',
+                        top: '50%',
+                        transform: `rotate(${i * 45}deg) translateY(-150px) translateX(-50%)`
+                      }}
+                      animate={{ scale: [1, 1.4, 1] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
+                    >
+                      {['✨', '💡', '📚', '🎯', '🚀', '💫', '⭐', '🌟'][i]}
+                    </motion.div>
+                  ))}
+                </motion.div>
+
+                {/* 主圆形背景 */}
+                <motion.div
+                  animate={{
+                    scale: [1, 1.08, 1],
+                    rotate: [0, 5, -5, 0]
+                  }}
+                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                  className="absolute inset-6 rounded-full border-4"
+                  style={{
+                    background: `linear-gradient(135deg, ${cardConfig[flippedCard].color}30 0%, ${cardConfig[flippedCard].color}10 100%)`,
+                    borderColor: `${cardConfig[flippedCard].color}60`,
+                    boxShadow: `0 0 100px ${cardConfig[flippedCard].color}50, inset 0 0 60px ${cardConfig[flippedCard].color}20`
+                  }}
                 />
-              </motion.div>
+
+                {/* 中心超大图标 */}
+                <motion.div
+                  animate={{
+                    y: [0, -20, 0],
+                    rotate: [-10, 10, -10, 10, 0]
+                  }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                  className="absolute inset-0 flex items-center justify-center"
+                >
+                  <motion.div
+                    animate={{ rotate: [0, 15, -15, 0] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                    className="text-9xl"
+                  >
+                    {cardConfig[flippedCard].loadingIcon}
+                  </motion.div>
+                </motion.div>
+
+                {/* 四角装饰 */}
+                <motion.div
+                  animate={{ rotate: -360 }}
+                  transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+                  className="absolute inset-0"
+                >
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 text-3xl">🔥</div>
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-3xl">💪</div>
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl">⚡</div>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-2xl">🎉</div>
+                </motion.div>
+
+                {/* 飘浮的知识符号 */}
+                {[...Array(6)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute text-2xl"
+                    style={{
+                      left: `${15 + i * 14}%`,
+                      top: '50%'
+                    }}
+                    animate={{
+                      y: [0, -50, 0],
+                      x: [0, Math.sin(i) * 25, 0],
+                      opacity: [0, 1, 0],
+                      scale: [0.5, 1.2, 0.5]
+                    }}
+                    transition={{
+                      duration: 3.5,
+                      repeat: Infinity,
+                      delay: i * 0.5,
+                      ease: 'easeOut'
+                    }}
+                  >
+                    {['🧠', '💭', '❓', '💡', '🔍', '📖'][i]}
+                  </motion.div>
+                ))}
+              </div>
+              
+              {/* 超大标题 */}
+              <motion.h2
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-4xl font-black text-white mb-4"
+              >
+                <span style={{ color: cardConfig[flippedCard].color }}>
+                  {cardConfig[flippedCard].loadingText}
+                </span>
+                <motion.span
+                  animate={{ rotate: [0, 20, -20, 0] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: 1 }}
+                  className="inline-block ml-3"
+                >
+                  {cardConfig[flippedCard].loadingIcon}
+                </motion.span>
+              </motion.h2>
               
               {/* 副标题 */}
               <motion.p 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="text-gray-300 text-lg mb-8"
+                className="text-gray-300 text-xl mb-6"
               >
                 {cardConfig[flippedCard].loadingSubtext}
               </motion.p>
+
+              {/* 100条随机搞笑激励话语 */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 }}
+                className="inline-block mb-8"
+              >
+                <motion.div
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                  className="px-8 py-5 rounded-3xl border-2 backdrop-blur-sm"
+                  style={{
+                    background: `linear-gradient(135deg, ${cardConfig[flippedCard].color}30 0%, ${cardConfig[flippedCard].color}10 100%)`,
+                    borderColor: `${cardConfig[flippedCard].color}60`,
+                    boxShadow: `0 10px 50px ${cardConfig[flippedCard].color}40`
+                  }}
+                >
+                  <span className="text-xl font-black text-white drop-shadow-lg">
+                    {(() => {
+                      const messages = [
+                        '🤯 大脑正在扩容中，请稍候...',
+                        '💪 学习就像健身，痛苦但值得！',
+                        '🧠 你的脑细胞正在开派对！',
+                        '📚 知识正在排队进入你的大脑...',
+                        '✨ 每一个概念都是一颗星星，正在为你点亮！',
+                        '🎯 瞄准目标，知识正在飞向你！',
+                        '🚀 你的大脑即将升级，请稍候...',
+                        '💡 灵感正在路上，堵车了但马上到！',
+                        '🎮 学习模式已开启，经验值+100！',
+                        '☕ 咖啡因已注入，大脑全速运转中...',
+                        '🎵 知识正在以3倍速下载中...',
+                        '🌟 你的智商正在突破天际！',
+                        '🔥 大脑CPU温度正常，超频运行中...',
+                        '⚡ 知识闪电正在击中你的大脑！',
+                        '🎪 你的大脑正在上演知识马戏团！',
+                        '🍕 知识就像披萨，一片一片进入你的大脑...',
+                        '🎨 你的大脑正在绘制知识地图...',
+                        '🎭 神经元们正在排练知识大戏！',
+                        '🎪 脑细胞们正在开知识嘉年华！',
+                        '🎸 你的大脑正在摇滚学习模式！',
+                        '🎳 知识保龄球正在击倒你的无知！',
+                        '🎮 恭喜解锁新技能：概念理解！',
+                        '🎰 知识老虎机正在转出大奖！',
+                        '🎤 你的大脑正在举办知识演唱会！',
+                        '🎬 知识大片正在你的大脑首映！',
+                        '🎨 你的大脑正在创作知识杰作！',
+                        '🎪 脑细胞们正在表演知识杂技！',
+                        '🎭 你的大脑正在上演知识话剧！',
+                        '🎸 知识摇滚正在你的大脑开唱！',
+                        '🎺 你的大脑正在吹响知识号角！',
+                        '🎻 知识交响乐正在你的大脑演奏！',
+                        '🎹 你的大脑正在弹奏知识钢琴曲！',
+                        '🎤 知识卡拉OK正在你的大脑进行！',
+                        '🎬 你的大脑正在拍摄知识纪录片！',
+                        '🎨 你的大脑正在举办知识画展！',
+                        '🎪 知识马戏团正在你的大脑巡演！',
+                        '🎭 你的大脑正在排练知识喜剧！',
+                        '🎸 知识乐队正在你的大脑开演唱会！',
+                        '🎺 你的大脑正在吹奏知识进行曲！',
+                        '🎻 知识小提琴正在你的大脑演奏！',
+                        '🎹 你的大脑正在创作知识奏鸣曲！',
+                        '🎤 知识脱口秀正在你的大脑直播！',
+                        '🎬 你的大脑正在剪辑知识大片！',
+                        '🎨 知识涂鸦正在你的大脑创作中！',
+                        '🎪 知识魔术正在你的大脑上演！',
+                        '🎭 你的大脑正在导演知识电影！',
+                        '🎸 知识吉他正在你的大脑独奏！',
+                        '🎺 你的大脑正在吹响知识起床号！',
+                        '🎻 知识大提琴正在你的大脑低吟！',
+                        '🎹 你的大脑正在即兴演奏知识爵士！',
+                        '🧪 知识实验室正在你的大脑运转！',
+                        '🔬 显微镜下的知识正在放大！',
+                        '📡 知识信号正在全频段接收中...',
+                        '🛰️ 知识卫星正在向你发送数据包！',
+                        '📦 知识快递正在派送中，请签收！',
+                        '🚚 满载知识的大卡车正在驶来！',
+                        '🏗️ 你的大脑正在搭建知识摩天大楼！',
+                        '🏛️ 知识殿堂正在你的大脑落成！',
+                        '🌈 知识彩虹正在你的大脑绽放！',
+                        '🌊 知识浪潮正在涌向你的大脑海岸！',
+                        '🌋 知识火山正在你的大脑喷发！',
+                        '🌪️ 知识龙卷风正在席卷你的大脑！',
+                        '⚡ 十万伏特知识正在充电中！',
+                        '🔋 大脑电量已满，知识输出准备就绪！',
+                        '📱 知识APP正在你的大脑更新版本！',
+                        '💻 大脑系统正在安装知识补丁！',
+                        '🖥️ 知识桌面正在整理文件...',
+                        '📊 知识图表正在生成中...',
+                        '📈 你的知识曲线正在指数级上升！',
+                        '📉 无知指数正在断崖式下跌！',
+                        '🎯 知识飞镖正中靶心！',
+                        '🏹 丘比特之箭正在射向知识之心！',
+                        '💘 你对知识的爱正在升温！',
+                        '💖 知识和你的大脑正在热恋中！',
+                        '💝 知识礼盒正在拆封中...',
+                        '🎁 你的大脑收到了一份知识大礼！',
+                        '🎀 知识丝带正在解开...',
+                        '🎊 知识庆典正在你的大脑举行！',
+                        '🎋 知识许愿树正在生长！',
+                        '🎍 知识竹林正在你的大脑扎根！',
+                        '🎎 知识人偶正在你的大脑表演！',
+                        '🎏 知识鲤鱼旗正在迎风飘扬！',
+                        '🎐 知识风铃正在你的大脑叮咚作响！',
+                        '🎑 知识满月正在你的大脑升起！',
+                        '🎆 知识烟花正在你的大脑绽放！',
+                        '🎇 知识流星正在划过你的大脑夜空！',
+                        '🎈 知识气球正在你的大脑升空！',
+                        '🎉 知识派对正在你的大脑狂欢！',
+                        '🎊 知识彩带正在你的大脑飞舞！',
+                        '🎋 知识竹子正在节节高升！',
+                        '🎍 知识盆栽正在茁壮成长！',
+                        '🎎 知识娃娃正在排队报到！',
+                        '🎏 知识旗帜正在高高飘扬！',
+                        '🎐 知识铃铛正在叮当作响！',
+                        '🎑 知识月光正在洒满你的大脑！',
+                        '🎆 知识火花正在四溅！',
+                        '🎇 知识光芒正在闪耀！',
+                        '🎈 知识泡泡正在你的大脑飘浮！',
+                        '🎉 知识庆典正在盛大开幕！',
+                        '🎊 知识礼花正在你的大脑绽放！',
+                        '🎋 知识藤蔓正在你的大脑攀爬！',
+                        '🎍 知识花园正在你的大脑盛开！',
+                        '🎎 知识玩偶正在你的大脑集合！',
+                        '🎏 知识风向标正在指向智慧！',
+                        '🎐 知识风铃草正在随风摇曳！',
+                        '🎑 知识星空正在你的大脑闪耀！',
+                        '🎆 知识烟火秀正在精彩上演！',
+                        '🎇 知识极光正在你的大脑舞动！',
+                        '🎈 知识热气球正在缓缓升起！',
+                        '🎉 知识嘉年华正在热闹非凡！',
+                        '🎊 知识彩旗正在迎风招展！'
+                      ]
+                      return messages[Math.floor(Math.random() * messages.length)]
+                    })()}
+                  </span>
+                </motion.div>
+              </motion.div>
               
               {/* 进度条 */}
               <motion.div
                 initial={{ opacity: 0, scaleX: 0 }}
                 animate={{ opacity: 1, scaleX: 1 }}
-                transition={{ delay: 0.5 }}
-                className="w-64 h-2 rounded-full overflow-hidden mx-auto"
+                transition={{ delay: 0.6 }}
+                className="w-80 h-3 rounded-full overflow-hidden mx-auto mb-6"
                 style={{ backgroundColor: `${cardConfig[flippedCard].color}30` }}
               >
                 <motion.div
@@ -361,7 +604,7 @@ export default function FiveWOneHCard({ data, conceptName }: FiveWOneHCardProps)
                     x: ['-100%', '100%']
                   }}
                   transition={{ 
-                    duration: 1.2,
+                    duration: 1.5,
                     repeat: Infinity,
                     ease: 'linear'
                   }}
@@ -376,11 +619,40 @@ export default function FiveWOneHCard({ data, conceptName }: FiveWOneHCardProps)
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-                className="text-gray-500 text-sm mt-6"
+                transition={{ delay: 0.7 }}
+                className="text-gray-400 text-base"
               >
-                正在分析「{conceptName}」的{cardConfig[flippedCard].title}维度
+                正在深度解析「{conceptName}」的
+                <span style={{ color: cardConfig[flippedCard].color }} className="font-bold mx-1">
+                  {cardConfig[flippedCard].title}
+                </span>
+                维度
               </motion.p>
+
+              {/* 加载动画点 */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}
+                className="flex justify-center gap-3 mt-8"
+              >
+                {[...Array(3)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: cardConfig[flippedCard].color }}
+                    animate={{
+                      scale: [1, 1.5, 1],
+                      opacity: [0.5, 1, 0.5]
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      delay: i * 0.3
+                    }}
+                  />
+                ))}
+              </motion.div>
             </motion.div>
           </motion.div>
         )}

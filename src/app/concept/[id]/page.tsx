@@ -1053,21 +1053,6 @@ function ConceptContent() {
                       </motion.div>
                     )}
 
-                    {/* 悬停提示 */}
-                    <motion.div 
-                      className="absolute bottom-0 right-0 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0"
-                    >
-                      <span 
-                        className="text-xs flex items-center px-2 py-1 rounded-full"
-                        style={{ 
-                          backgroundColor: `${difficultyColor}20`,
-                          color: difficultyColor
-                        }}
-                      >
-                        <ChevronRight className="w-3 h-3 mr-1" />
-                        查看详情
-                      </span>
-                    </motion.div>
                   </div>
 
                   {/* 悬停时的光扫效果 */}
