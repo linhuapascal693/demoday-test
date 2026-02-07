@@ -32,42 +32,60 @@ const cardConfig = {
     subtitle: '是什么',
     color: '#e8a87c',
     icon: '📦',
-    gradient: 'from-[#e8a87c]/20 to-[#e8a87c]/5'
+    gradient: 'from-[#e8a87c]/20 to-[#e8a87c]/5',
+    loadingIcon: '🤔',
+    loadingText: '让我想想这是什么...',
+    loadingSubtext: '正在拆解概念的本质'
   },
   why: {
     title: 'Why',
     subtitle: '为什么',
     color: '#85dcb8',
     icon: '💡',
-    gradient: 'from-[#85dcb8]/20 to-[#85dcb8]/5'
+    gradient: 'from-[#85dcb8]/20 to-[#85dcb8]/5',
+    loadingIcon: '🤯',
+    loadingText: '为什么要学这个呢...',
+    loadingSubtext: '正在探索背后的意义'
   },
   how: {
     title: 'How',
     subtitle: '怎么用',
     color: '#c38d9e',
     icon: '🛠️',
-    gradient: 'from-[#c38d9e]/20 to-[#c38d9e]/5'
+    gradient: 'from-[#c38d9e]/20 to-[#c38d9e]/5',
+    loadingIcon: '🤹',
+    loadingText: '这个要怎么操作呢...',
+    loadingSubtext: '正在整理使用方法'
   },
   when: {
     title: 'When',
     subtitle: '何时用',
     color: '#41b3a3',
     icon: '⏰',
-    gradient: 'from-[#41b3a3]/20 to-[#41b3a3]/5'
+    gradient: 'from-[#41b3a3]/20 to-[#41b3a3]/5',
+    loadingIcon: '⏳',
+    loadingText: '什么时候用最好呢...',
+    loadingSubtext: '正在分析最佳时机'
   },
   where: {
     title: 'Where',
     subtitle: '在哪用',
     color: '#e27d60',
     icon: '📍',
-    gradient: 'from-[#e27d60]/20 to-[#e27d60]/5'
+    gradient: 'from-[#e27d60]/20 to-[#e27d60]/5',
+    loadingIcon: '🗺️',
+    loadingText: '在哪里能用到呢...',
+    loadingSubtext: '正在定位应用场景'
   },
   who: {
     title: 'Who',
     subtitle: '谁在主导',
     color: '#9b59b6',
     icon: '👥',
-    gradient: 'from-[#9b59b6]/20 to-[#9b59b6]/5'
+    gradient: 'from-[#9b59b6]/20 to-[#9b59b6]/5',
+    loadingIcon: '🕵️',
+    loadingText: '都有谁在研究这个...',
+    loadingSubtext: '正在寻找领域专家'
   }
 }
 
@@ -261,6 +279,113 @@ export default function FiveWOneHCard({ data, conceptName }: FiveWOneHCardProps)
 
   return (
     <div className="relative">
+      {/* 全屏加载动画 - 点击卡片后显示 */}
+      <AnimatePresence>
+        {flippedCard && cardDetails[flippedCard]?.isLoading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-40 flex items-center justify-center"
+            style={{
+              background: 'rgba(0, 0, 0, 0.7)',
+              backdropFilter: 'blur(4px)'
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 200 }}
+              className="text-center"
+            >
+              {/* 可爱的思考动画 */}
+              <motion.div
+                animate={{ 
+                  y: [0, -20, 0],
+                  rotate: [-8, 8, -8, 8, 0]
+                }}
+                transition={{ 
+                  duration: 1.8,
+                  repeat: Infinity,
+                  ease: 'easeInOut'
+                }}
+                className="text-8xl mb-8"
+              >
+                {cardConfig[flippedCard].loadingIcon}
+              </motion.div>
+              
+              {/* 对话气泡 */}
+              <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="relative inline-block mb-6"
+              >
+                <div 
+                  className="px-8 py-4 rounded-3xl text-white text-xl font-bold"
+                  style={{
+                    background: `linear-gradient(135deg, ${cardConfig[flippedCard].color} 0%, ${cardConfig[flippedCard].color}cc 100%)`,
+                    boxShadow: `0 10px 40px ${cardConfig[flippedCard].color}50, 0 0 60px ${cardConfig[flippedCard].color}30`
+                  }}
+                >
+                  {cardConfig[flippedCard].loadingText}
+                </div>
+                {/* 气泡小三角 */}
+                <div 
+                  className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-6 h-6 rotate-45"
+                  style={{ background: cardConfig[flippedCard].color }}
+                />
+              </motion.div>
+              
+              {/* 副标题 */}
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="text-gray-300 text-lg mb-8"
+              >
+                {cardConfig[flippedCard].loadingSubtext}
+              </motion.p>
+              
+              {/* 进度条 */}
+              <motion.div
+                initial={{ opacity: 0, scaleX: 0 }}
+                animate={{ opacity: 1, scaleX: 1 }}
+                transition={{ delay: 0.5 }}
+                className="w-64 h-2 rounded-full overflow-hidden mx-auto"
+                style={{ backgroundColor: `${cardConfig[flippedCard].color}30` }}
+              >
+                <motion.div
+                  animate={{ 
+                    x: ['-100%', '100%']
+                  }}
+                  transition={{ 
+                    duration: 1.2,
+                    repeat: Infinity,
+                    ease: 'linear'
+                  }}
+                  className="h-full w-1/3 rounded-full"
+                  style={{ 
+                    background: `linear-gradient(90deg, transparent, ${cardConfig[flippedCard].color}, transparent)` 
+                  }}
+                />
+              </motion.div>
+              
+              {/* 知识点提示 */}
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="text-gray-500 text-sm mt-6"
+              >
+                正在分析「{conceptName}」的{cardConfig[flippedCard].title}维度
+              </motion.p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* 卡片网格 */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {(Object.keys(cardConfig) as Array<keyof typeof cardConfig>).map((type) => {
@@ -271,56 +396,125 @@ export default function FiveWOneHCard({ data, conceptName }: FiveWOneHCardProps)
           return (
             <motion.div
               key={type}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ 
+                scale: 1.05,
+                y: -8,
+                transition: { type: 'spring', stiffness: 400, damping: 15 }
+              }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => handleCardClick(type)}
               className={`relative h-40 cursor-pointer rounded-xl bg-gradient-to-br ${config.gradient}
-                border border-white/10 hover:border-white/20 transition-all duration-300
-                overflow-hidden group`}
+                border-2 border-white/10 hover:border-white/40 
+                transition-all duration-300 ease-out
+                overflow-hidden group
+                hover:shadow-2xl`}
+              style={{
+                boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+              }}
             >
-              {/* 背景装饰 */}
-              <div
-                className="absolute top-0 right-0 w-20 h-20 opacity-10 rounded-full -mr-10 -mt-10 transition-transform group-hover:scale-150"
-                style={{ backgroundColor: config.color }}
+              {/* 悬停发光边框效果 */}
+              <motion.div
+                className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                style={{
+                  background: `linear-gradient(135deg, ${config.color}20 0%, transparent 50%, ${config.color}10 100%)`,
+                  boxShadow: `inset 0 0 30px ${config.color}20, 0 0 30px ${config.color}30`
+                }}
               />
 
-              {/* AI 生成指示器 */}
+              {/* 背景装饰 - 悬停时放大并改变透明度 */}
+              <motion.div
+                className="absolute top-0 right-0 w-24 h-24 rounded-full -mr-12 -mt-12 transition-all duration-500 group-hover:scale-200 group-hover:opacity-20"
+                style={{ 
+                  backgroundColor: config.color,
+                  opacity: 0.1
+                }}
+              />
+
+              {/* 底部装饰 - 新增 */}
+              <motion.div
+                className="absolute bottom-0 left-0 w-16 h-16 rounded-full -ml-8 -mb-8 transition-all duration-500 group-hover:scale-150 group-hover:opacity-15"
+                style={{ 
+                  backgroundColor: config.color,
+                  opacity: 0.05
+                }}
+              />
+
+              {/* AI 生成指示器 - 悬停时放大 */}
               {hasDetail && (
-                <div className="absolute top-2 right-2">
+                <motion.div 
+                  className="absolute top-2 right-2 transition-transform duration-300 group-hover:scale-110"
+                  whileHover={{ rotate: 180 }}
+                >
                   <Sparkles className="w-4 h-4 text-[#e8a87c]" />
-                </div>
+                </motion.div>
               )}
 
               {/* 卡片内容 */}
               <div className="relative h-full p-5 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center space-x-2 mb-2">
-                    <span className="text-2xl">{config.icon}</span>
-                    <span
-                      className="text-lg font-bold"
-                      style={{ color: config.color }}
+                    {/* 图标悬停动画 */}
+                    <motion.span 
+                      className="text-2xl transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
                     >
-                      {config.title}
+                      {config.icon}
+                    </motion.span>
+                    <span
+                      className="text-lg font-bold transition-all duration-300 group-hover:text-xl"
+                      style={{ 
+                        color: config.color,
+                        textShadow: '0 0 0 transparent'
+                      }}
+                    >
+                      <span className="group-hover:[text-shadow:0_0_20px_currentColor]">
+                        {config.title}
+                      </span>
                     </span>
                   </div>
-                  <span className="text-xs text-gray-500">{config.subtitle}</span>
+                  <span className="text-xs text-gray-500 transition-colors duration-300 group-hover:text-gray-400">
+                    {config.subtitle}
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <p className="text-gray-400 text-sm line-clamp-2 flex-1 mr-2">
+                  <p className="text-gray-400 text-sm line-clamp-2 flex-1 mr-2 transition-colors duration-300 group-hover:text-gray-300">
                     {content}
                   </p>
-                  <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-white transition-colors" />
+                  {/* 箭头悬停动画 */}
+                  <motion.div
+                    className="transition-transform duration-300 group-hover:translate-x-1"
+                  >
+                    <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-white transition-colors" />
+                  </motion.div>
                 </div>
 
-                {/* 点击提示 */}
-                <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-xs text-gray-500 flex items-center">
+                {/* 点击提示 - 增强动画 */}
+                <motion.div 
+                  className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0"
+                >
+                  <span 
+                    className="text-xs flex items-center px-2 py-1 rounded-full"
+                    style={{ 
+                      backgroundColor: `${config.color}20`,
+                      color: config.color
+                    }}
+                  >
                     <Sparkles className="w-3 h-3 mr-1" />
                     AI 深度分析
                   </span>
-                </div>
+                </motion.div>
               </div>
+
+              {/* 悬停时的光扫效果 */}
+              <motion.div
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 pointer-events-none"
+                initial={{ x: '-100%' }}
+                whileHover={{ x: '100%' }}
+                transition={{ duration: 0.8, ease: 'easeInOut' }}
+                style={{
+                  background: `linear-gradient(90deg, transparent 0%, ${config.color}10 50%, transparent 100%)`,
+                }}
+              />
             </motion.div>
           )
         })}
@@ -333,125 +527,320 @@ export default function FiveWOneHCard({ data, conceptName }: FiveWOneHCardProps)
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{
+              background: 'rgba(0, 0, 0, 0.85)',
+              backdropFilter: 'blur(8px)'
+            }}
             onClick={handleClose}
           >
+            {/* 背景发光效果 */}
             <motion.div
-              initial={{ scale: 0.8, opacity: 0, rotateY: -90 }}
-              animate={{ scale: 1, opacity: 1, rotateY: 0 }}
-              exit={{ scale: 0.8, opacity: 0, rotateY: 90 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-2xl max-h-[80vh] overflow-hidden"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5 }}
+              transition={{ duration: 0.5 }}
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: `radial-gradient(circle at center, ${cardConfig[flippedCard].color}20 0%, transparent 70%)`
+              }}
+            />
+            
+            <motion.div
+              initial={{ 
+                scale: 0.5, 
+                opacity: 0, 
+                rotateY: -180,
+                y: 100
+              }}
+              animate={{ 
+                scale: 1, 
+                opacity: 1, 
+                rotateY: 0,
+                y: 0
+              }}
+              exit={{ 
+                scale: 0.5, 
+                opacity: 0, 
+                rotateY: 180,
+                y: 100
+              }}
+              transition={{ 
+                type: 'spring', 
+                damping: 20, 
+                stiffness: 200,
+                mass: 1.2
+              }}
+              className="relative w-full max-w-2xl max-h-[85vh] overflow-hidden shadow-2xl"
+              style={{
+                boxShadow: `0 0 60px ${cardConfig[flippedCard].color}40, 0 25px 50px -12px rgba(0, 0, 0, 0.8)`
+              }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* 卡片容器 */}
               <div
-                className="rounded-2xl border border-white/20 overflow-hidden"
+                className="rounded-2xl border-2 overflow-hidden"
                 style={{
-                  background: `linear-gradient(135deg, ${cardConfig[flippedCard].color}15 0%, #1a1a2e 100%)`
+                  background: `linear-gradient(135deg, ${cardConfig[flippedCard].color}20 0%, #1a1a2e 50%, #0f172a 100%)`,
+                  borderColor: `${cardConfig[flippedCard].color}50`
                 }}
               >
+                {/* 顶部发光条 */}
+                <div 
+                  className="h-1 w-full"
+                  style={{
+                    background: `linear-gradient(90deg, transparent, ${cardConfig[flippedCard].color}, transparent)`,
+                    boxShadow: `0 0 20px ${cardConfig[flippedCard].color}`
+                  }}
+                />
                 {/* 头部 */}
                 <div
-                  className="p-6 border-b border-white/10"
-                  style={{ backgroundColor: `${cardConfig[flippedCard].color}20` }}
+                  className="p-6 border-b-2"
+                  style={{ 
+                    background: `linear-gradient(135deg, ${cardConfig[flippedCard].color}30 0%, ${cardConfig[flippedCard].color}10 100%)`,
+                    borderColor: `${cardConfig[flippedCard].color}40`
+                  }}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-3xl">{cardConfig[flippedCard].icon}</span>
+                    <div className="flex items-center space-x-4">
+                      <motion.div 
+                        initial={{ scale: 0, rotate: -180 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                        className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl"
+                        style={{ 
+                          background: `linear-gradient(135deg, ${cardConfig[flippedCard].color}40, ${cardConfig[flippedCard].color}20)`,
+                          boxShadow: `0 0 30px ${cardConfig[flippedCard].color}50`
+                        }}
+                      >
+                        {cardConfig[flippedCard].icon}
+                      </motion.div>
                       <div>
-                        <h3
-                          className="text-2xl font-bold"
-                          style={{ color: cardConfig[flippedCard].color }}
+                        <motion.h3
+                          initial={{ x: -20, opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          transition={{ delay: 0.3 }}
+                          className="text-3xl font-bold"
+                          style={{ 
+                            color: cardConfig[flippedCard].color,
+                            textShadow: `0 0 30px ${cardConfig[flippedCard].color}60`
+                          }}
                         >
                           {cardConfig[flippedCard].title}
-                        </h3>
-                        <span className="text-gray-400 text-sm">
+                        </motion.h3>
+                        <motion.span 
+                          initial={{ x: -20, opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          transition={{ delay: 0.4 }}
+                          className="text-gray-300 text-sm font-medium"
+                        >
                           {cardConfig[flippedCard].subtitle}
-                        </span>
+                        </motion.span>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
                       {/* 重试按钮 */}
                       {cardDetails[flippedCard]?.error && (
-                        <button
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                           onClick={() => handleRetry(flippedCard)}
-                          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                          className="p-3 rounded-xl transition-colors"
+                          style={{ backgroundColor: `${cardConfig[flippedCard].color}20` }}
                           title="重新生成"
                         >
-                          <RefreshCw className="w-5 h-5 text-gray-400" />
-                        </button>
+                          <RefreshCw className="w-5 h-5" style={{ color: cardConfig[flippedCard].color }} />
+                        </motion.button>
                       )}
-                      <button
+                      <motion.button
+                        whileHover={{ scale: 1.1, rotate: 90 }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={handleClose}
-                        className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                        className="p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
                       >
                         <X className="w-5 h-5 text-gray-400" />
-                      </button>
+                      </motion.button>
                     </div>
                   </div>
                 </div>
 
                 {/* 内容区域 */}
-                <div className="p-6 overflow-y-auto max-h-[60vh]">
+                <div 
+                  className="p-8 overflow-y-auto max-h-[65vh] pb-20"
+                  style={{
+                    background: 'linear-gradient(180deg, rgba(26, 26, 46, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%)'
+                  }}
+                >
                   {cardDetails[flippedCard]?.isLoading ? (
-                    <div className="flex flex-col items-center justify-center py-12">
-                      <Loader2 className="w-8 h-8 text-[#e8a87c] animate-spin mb-4" />
-                      <p className="text-gray-400">AI 正在深度分析...</p>
-                      <p className="text-gray-500 text-sm mt-2">请稍候，正在生成专业解读</p>
-                    </div>
-                  ) : cardDetails[flippedCard]?.error ? (
-                    <div className="text-center py-12">
-                      <p className="text-red-400 mb-4">{cardDetails[flippedCard].error}</p>
-                      <button
-                        onClick={() => handleRetry(flippedCard)}
-                        className="px-4 py-2 bg-[#e8a87c]/20 text-[#e8a87c] rounded-lg hover:bg-[#e8a87c]/30 transition-colors flex items-center space-x-2 mx-auto"
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex flex-col items-center justify-center py-12"
+                    >
+                      {/* 可爱的加载动画 */}
+                      <motion.div
+                        animate={{ 
+                          y: [0, -15, 0],
+                          rotate: [-5, 5, -5, 5, 0]
+                        }}
+                        transition={{ 
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: 'easeInOut'
+                        }}
+                        className="text-7xl mb-6"
                       >
-                        <RefreshCw className="w-4 h-4" />
+                        {cardConfig[flippedCard].loadingIcon}
+                      </motion.div>
+                      
+                      {/* 对话气泡 */}
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="relative mb-6"
+                      >
+                        <div 
+                          className="px-6 py-3 rounded-2xl text-white font-medium text-center"
+                          style={{
+                            background: `linear-gradient(135deg, ${cardConfig[flippedCard].color} 0%, ${cardConfig[flippedCard].color}dd 100%)`,
+                            boxShadow: `0 8px 30px ${cardConfig[flippedCard].color}40`
+                          }}
+                        >
+                          {cardConfig[flippedCard].loadingText}
+                        </div>
+                        {/* 气泡小三角 */}
+                        <div 
+                          className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-4 rotate-45"
+                          style={{ background: cardConfig[flippedCard].color }}
+                        />
+                      </motion.div>
+                      
+                      {/* 副标题 */}
+                      <motion.p 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.4 }}
+                        className="text-gray-400 text-sm mb-6"
+                      >
+                        {cardConfig[flippedCard].loadingSubtext}
+                      </motion.p>
+                      
+                      {/* 进度指示器 */}
+                      <motion.div
+                        initial={{ opacity: 0, scaleX: 0 }}
+                        animate={{ opacity: 1, scaleX: 1 }}
+                        transition={{ delay: 0.5, duration: 0.5 }}
+                        className="w-48 h-1 rounded-full overflow-hidden"
+                        style={{ backgroundColor: `${cardConfig[flippedCard].color}20` }}
+                      >
+                        <motion.div
+                          animate={{ 
+                            x: ['-100%', '100%']
+                          }}
+                          transition={{ 
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: 'linear'
+                          }}
+                          className="h-full w-1/2 rounded-full"
+                          style={{ backgroundColor: cardConfig[flippedCard].color }}
+                        />
+                      </motion.div>
+                    </motion.div>
+                  ) : cardDetails[flippedCard]?.error ? (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-center py-16"
+                    >
+                      <div 
+                        className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                        style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)' }}
+                      >
+                        <X className="w-8 h-8 text-red-400" />
+                      </div>
+                      <p className="text-red-400 mb-6 text-lg">{cardDetails[flippedCard].error}</p>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => handleRetry(flippedCard)}
+                        className="px-6 py-3 rounded-xl font-medium transition-colors flex items-center space-x-2 mx-auto"
+                        style={{
+                          background: `linear-gradient(135deg, ${cardConfig[flippedCard].color}30, ${cardConfig[flippedCard].color}10)`,
+                          color: cardConfig[flippedCard].color,
+                          border: `1px solid ${cardConfig[flippedCard].color}50`
+                        }}
+                      >
+                        <RefreshCw className="w-5 h-5" />
                         <span>重新生成</span>
-                      </button>
-                    </div>
+                      </motion.button>
+                    </motion.div>
                   ) : cardDetails[flippedCard]?.content ? (
-                    <div className="prose prose-invert max-w-none">
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="prose prose-invert max-w-none"
+                    >
                       {renderMarkdown(cardDetails[flippedCard].content)}
-                    </div>
+                    </motion.div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-12">
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="flex flex-col items-center justify-center py-16"
+                    >
                       <Loader2 className="w-8 h-8 text-[#e8a87c] animate-spin mb-4" />
                       <p className="text-gray-400">准备生成分析...</p>
-                    </div>
+                    </motion.div>
                   )}
                 </div>
 
                 {/* 底部 */}
-                <div className="p-4 border-t border-white/10 bg-white/5 flex justify-between items-center">
-                  <span className="text-xs text-gray-500">
-                    {conceptName} - {cardConfig[flippedCard].subtitle}
+                <div 
+                  className="p-5 border-t-2 flex justify-between items-center"
+                  style={{
+                    background: `linear-gradient(135deg, ${cardConfig[flippedCard].color}10 0%, rgba(15, 23, 42, 0.95) 100%)`,
+                    borderColor: `${cardConfig[flippedCard].color}30`
+                  }}
+                >
+                  <span className="text-sm text-gray-400 font-medium">
+                    <span style={{ color: cardConfig[flippedCard].color }}>{conceptName}</span>
+                    <span className="mx-2">·</span>
+                    {cardConfig[flippedCard].subtitle}
                   </span>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-3">
                     {cardDetails[flippedCard]?.content && !cardDetails[flippedCard]?.isLoading && (
-                      <button
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                         onClick={() => handleRetry(flippedCard)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center space-x-1"
+                        className="px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center space-x-2"
                         style={{
-                          backgroundColor: `${cardConfig[flippedCard].color}20`,
-                          color: cardConfig[flippedCard].color
+                          background: `linear-gradient(135deg, ${cardConfig[flippedCard].color}20, ${cardConfig[flippedCard].color}10)`,
+                          color: cardConfig[flippedCard].color,
+                          border: `1px solid ${cardConfig[flippedCard].color}40`
                         }}
                       >
-                        <RefreshCw className="w-3 h-3" />
+                        <RefreshCw className="w-4 h-4" />
                         <span>重新生成</span>
-                      </button>
+                      </motion.button>
                     )}
-                    <button
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       onClick={handleClose}
-                      className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                      className="px-6 py-2 rounded-xl text-sm font-medium transition-colors"
                       style={{
-                        backgroundColor: `${cardConfig[flippedCard].color}20`,
-                        color: cardConfig[flippedCard].color
+                        background: `linear-gradient(135deg, ${cardConfig[flippedCard].color}30, ${cardConfig[flippedCard].color}20)`,
+                        color: cardConfig[flippedCard].color,
+                        boxShadow: `0 4px 15px ${cardConfig[flippedCard.color]}40`
                       }}
                     >
                       关闭
-                    </button>
+                    </motion.button>
                   </div>
                 </div>
               </div>

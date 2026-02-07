@@ -130,7 +130,7 @@ export async function generateConceptDecode(
    - title: 书名
    - author: 作者
    - description: 书籍简介（1-2句话）
-   - reason: 推荐理由（特别说明对"${profession}"有什么帮助）
+   - reason: 推荐理由（说明这本书对理解"${concept}"这个知识点有什么帮助，重点讲与知识点的关联，而不是用户的职业背景）
    - difficulty: 难度等级（入门级/进阶级/专家级）
 
 重要提示：
@@ -169,7 +169,8 @@ export async function generateFeynmanQuestion(
   concept: string,
   round: number,
   previousContext: string,
-  userAnswer?: string
+  userAnswer?: string,
+  isInitial?: boolean
 ) {
   // 检测用户是否表示不理解
   const isConfused = userAnswer && (
@@ -180,6 +181,13 @@ export async function generateFeynmanQuestion(
     userAnswer.includes('不会') ||
     userAnswer.length < 5
   )
+
+  // 如果是初始问题（从概念页面点击进来），生成特定的开场白
+  if (isInitial && round === 1 && !previousContext) {
+    return `你好！我是刚学编程的小白。听说今天要学习「${concept}」这个概念，但我完全不知道这是什么意思...
+
+老师，你能用简单的话给我讲讲什么是${concept}吗？最好举个例子让我理解一下～`
+  }
 
   const systemPrompt = `你是一个费曼学习法的AI助手。你扮演一个初学者，通过提问来帮助用户验证他们对概念的理解。
 

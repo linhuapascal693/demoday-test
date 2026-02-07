@@ -392,25 +392,233 @@ function KnowledgeMapContent() {
 
   if (isLoading || isGenerating) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-4">
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden bg-gradient-to-b from-[#1a1a2e] via-[#2d1b4e] to-[#1a1a2e]">
+        {/* 粉色泡泡背景 */}
+        <div className="absolute inset-0 overflow-hidden">
+          {[...Array(12)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full"
+              style={{
+                width: 30 + Math.random() * 80,
+                height: 30 + Math.random() * 80,
+                background: `radial-gradient(circle at 30% 30%, ${['#ff6b9d', '#c44569', '#f8b500', '#ff9ff3', '#54a0ff'][i % 5]}30, transparent)`,
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`
+              }}
+              animate={{
+                y: [0, -40, 0],
+                x: [0, Math.random() * 30 - 15, 0],
+                scale: [1, 1.3, 1],
+                opacity: [0.2, 0.5, 0.2]
+              }}
+              transition={{
+                duration: 5 + Math.random() * 3,
+                repeat: Infinity,
+                delay: Math.random() * 2,
+                ease: 'easeInOut'
+              }}
+            />
+          ))}
+        </div>
+
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-center"
+          className="text-center relative z-10"
         >
-          <div className="relative w-24 h-24 mx-auto mb-6">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#e8a87c] to-[#85dcb8] opacity-20 animate-ping" />
-            <div className="absolute inset-2 rounded-full bg-gradient-to-r from-[#e8a87c] to-[#85dcb8] opacity-40" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Sparkles className="w-8 h-8 text-[#e8a87c] animate-pulse" />
-            </div>
+          {/* 超大搞笑女孩动画 */}
+          <div className="relative w-72 h-72 mx-auto mb-10">
+            {/* 旋转的装饰圈 */}
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
+              className="absolute inset-0"
+            >
+              {[...Array(8)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute text-3xl"
+                  style={{
+                    left: '50%',
+                    top: '50%',
+                    transform: `rotate(${i * 45}deg) translateY(-140px) translateX(-50%)`
+                  }}
+                  animate={{ 
+                    scale: [1, 1.4, 1],
+                    rotate: [0, 20, -20, 0]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, delay: i * 0.15 }}
+                >
+                  {['✨', '🌸', '💖', '🎀', '⭐', '💫', '🦄', '🌈'][i]}
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* 主圆形背景 - 更大更醒目 */}
+            <motion.div
+              animate={{
+                scale: [1, 1.08, 1],
+                rotate: [0, 3, -3, 0]
+              }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute inset-6 rounded-full bg-gradient-to-br from-[#ff6b9d]/40 via-[#c44569]/30 to-[#f8b500]/40 border-4 border-[#ff6b9d]/60"
+              style={{
+                boxShadow: '0 0 80px rgba(255, 107, 157, 0.5), inset 0 0 60px rgba(255, 255, 255, 0.15)'
+              }}
+            />
+
+            {/* 搞笑女孩表情 - 超大会动 */}
+            <motion.div
+              animate={{
+                y: [0, -15, 0],
+                rotate: [-5, 5, -5],
+                scale: [1, 1.05, 1]
+              }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute inset-0 flex items-center justify-center"
+            >
+              <div className="text-center">
+                {/* 女孩头像 - 超大 */}
+                <motion.div
+                  animate={{ 
+                    rotate: [0, 15, -15, 0],
+                    scale: [1, 1.1, 1]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="text-9xl mb-2"
+                >
+                  👩‍🦰
+                </motion.div>
+                {/* 腮红 - 会发光 */}
+                <div className="flex justify-center gap-10 -mt-6">
+                  <motion.div
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    className="w-6 h-5 bg-pink-500 rounded-full blur-md"
+                  />
+                  <motion.div
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
+                    transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
+                    className="w-6 h-5 bg-pink-500 rounded-full blur-md"
+                  />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* 飘浮的爱心和星星 */}
+            {[...Array(6)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute text-3xl"
+                style={{
+                  left: `${15 + i * 14}%`,
+                  top: '60%'
+                }}
+                animate={{
+                  y: [0, -60, 0],
+                  x: [0, Math.sin(i) * 25, 0],
+                  opacity: [0, 1, 0],
+                  scale: [0.5, 1.2, 0.5],
+                  rotate: [0, 360]
+                }}
+                transition={{
+                  duration: 3.5,
+                  repeat: Infinity,
+                  delay: i * 0.5,
+                  ease: 'easeOut'
+                }}
+              >
+                {['💖', '💕', '💗', '💓', '💝', '💘'][i]}
+              </motion.div>
+            ))}
+
+            {/* 底部跳跃的小动物 */}
+            <motion.div
+              animate={{ y: [0, -20, 0], rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-4xl"
+            >
+              🐰
+            </motion.div>
           </div>
-          <h2 className="text-xl font-semibold text-white/90 mb-2">
-            正在生成知识全景图
-          </h2>
-          <p className="text-sm text-white/50">
-            AI 正在分析「{topic}」的知识结构...
-          </p>
+
+          {/* 主标题 - 更大更醒目 */}
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="text-4xl font-black text-white mb-4"
+          >
+            <span className="bg-gradient-to-r from-[#ff6b9d] via-[#f8b500] to-[#ff9ff3] bg-clip-text text-transparent">
+              正在生成知识全景图
+            </span>
+            <motion.span
+              animate={{ rotate: [0, 30, -30, 0], scale: [1, 1.3, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
+              className="inline-block ml-3"
+            >
+              💃
+            </motion.span>
+          </motion.h2>
+
+          {/* 副标题 */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-lg text-white/70 mb-8"
+          >
+            AI 正在为你绘制「{topic}」的知识地图...
+          </motion.p>
+
+          {/* 搞笑女性视角激励话语 */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.7 }}
+            className="inline-block"
+          >
+            <motion.div
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+              className="px-8 py-4 rounded-3xl bg-gradient-to-r from-[#ff6b9d]/40 via-[#f8b500]/30 to-[#ff9ff3]/40 border-2 border-[#ff6b9d]/60 backdrop-blur-sm"
+              style={{
+                boxShadow: '0 10px 40px rgba(255, 107, 157, 0.4)'
+              }}
+            >
+              <span className="text-xl font-black text-white drop-shadow-lg">
+                🌟 学习就像化妆，多练习才能画出完美妆容！
+              </span>
+            </motion.div>
+          </motion.div>
+
+          {/* 搞笑的加载进度 */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.9 }}
+            className="flex justify-center items-center gap-4 mt-12"
+          >
+            {['💄', '👠', '👛', '💅', '💎'].map((emoji, i) => (
+              <motion.span
+                key={i}
+                className="text-3xl"
+                animate={{
+                  y: [0, -20, 0],
+                  scale: [1, 1.4, 1],
+                  rotate: [0, 15, -15, 0]
+                }}
+                transition={{
+                  duration: 1.2,
+                  repeat: Infinity,
+                  delay: i * 0.2
+                }}
+              >
+                {emoji}
+              </motion.span>
+            ))}
+          </motion.div>
         </motion.div>
       </div>
     )

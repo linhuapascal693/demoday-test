@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Send, 
@@ -14,7 +14,8 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
-  MessageSquare
+  MessageSquare,
+  GraduationCap
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -38,7 +39,9 @@ interface EvaluationResult {
 
 export default function FeynmanPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const conceptId = params.id as string
+  const isInitial = searchParams.get('initial') === 'true'
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { user } = useAuth()
 
@@ -57,6 +60,13 @@ export default function FeynmanPage() {
   useEffect(() => {
     const fetchConceptName = async () => {
       try {
+        // 优先从 URL 参数获取概念名称（从概念页面跳转过来时会携带）
+        const nameFromUrl = searchParams.get('name')
+        if (nameFromUrl) {
+          setConceptName(decodeURIComponent(nameFromUrl))
+          return
+        }
+        
         // 从知识图谱节点中获取概念名称
         // 这里简化处理，实际应该从数据库查询
         const conceptNames: { [key: string]: string } = {
@@ -79,7 +89,7 @@ export default function FeynmanPage() {
     }
 
     fetchConceptName()
-  }, [conceptId])
+  }, [conceptId, searchParams])
 
   // Initialize conversation
   useEffect(() => {
@@ -114,7 +124,8 @@ export default function FeynmanPage() {
           body: JSON.stringify({
             concept: conceptName,
             round: 1,
-            conversation: ''
+            conversation: '',
+            isInitial: isInitial // 传递初始问题标记
           })
         })
 
@@ -124,11 +135,18 @@ export default function FeynmanPage() {
 
         const data = await response.json()
         
+        // 如果是初始问题，使用更具体的提问方式
+        const initialQuestion = isInitial 
+          ? `你好！我是刚学编程的小白。听说今天要学习「${conceptName}」这个概念，但我完全不知道这是什么意思...
+
+老师，你能用简单的话给我讲讲什么是${conceptName}吗？最好举个例子让我理解一下～`
+          : (data.question || `你好！我是刚学编程的小白。能给我讲讲什么是${conceptName}吗？我不太理解这个概念...`)
+        
         setMessages([
           {
             id: '1',
             role: 'ai',
-            content: data.question || `你好！我是刚学编程的小白。能给我讲讲什么是${conceptName}吗？我不太理解这个概念...`,
+            content: initialQuestion,
             round: 1
           }
         ])
@@ -136,11 +154,17 @@ export default function FeynmanPage() {
       } catch (error) {
         console.error('Error initializing conversation:', error)
         // 使用默认问题
+        const defaultQuestion = isInitial
+          ? `你好！我是刚学编程的小白。听说今天要学习「${conceptName}」这个概念，但我完全不知道这是什么意思...
+
+老师，你能用简单的话给我讲讲什么是${conceptName}吗？最好举个例子让我理解一下～`
+          : `你好！我是刚学编程的小白。能给我讲讲什么是${conceptName}吗？我不太理解这个概念...`
+        
         setMessages([
           {
             id: '1',
             role: 'ai',
-            content: `你好！我是刚学编程的小白。能给我讲讲什么是${conceptName}吗？我不太理解这个概念...`,
+            content: defaultQuestion,
             round: 1
           }
         ])

@@ -5,7 +5,7 @@ import { generateFeynmanQuestion, evaluateFeynmanAnswer } from '@/lib/siliconflo
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { concept, round, conversation, userAnswer, evaluate } = body
+    const { concept, round, conversation, userAnswer, evaluate, isInitial } = body
 
     if (!concept) {
       return NextResponse.json(
@@ -45,7 +45,8 @@ export async function POST(request: NextRequest) {
       concept, 
       round, 
       conversation || '',
-      userAnswer
+      userAnswer,
+      isInitial
     )
 
     return NextResponse.json({
