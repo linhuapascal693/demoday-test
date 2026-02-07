@@ -200,55 +200,112 @@ function KnowledgeMapContent() {
         })
 
         // 树形布局参数
-        const levelHeight = 220  // 每层高度
-        const baseNodeWidth = 180  // 基础节点宽度
-        const siblingGap = 40  // 兄弟节点之间的间隙
+        const levelHeight = 160  // 每层高度（减小垂直间距）
+        const nodeWidth = 120     // 节点实际宽度
+        const siblingGap = 10     // 同一父节点的子节点间距（紧凑）
+        const groupGap = 80       // 不同父节点的子节点组间距（分开）
         
-        // 递归计算子树宽度
-        const calculateSubtreeWidth = (node: any): number => {
-          if (!node.children || node.children.length === 0) {
-            return baseNodeWidth
+        // 按层级分组节点
+        const nodesByLevel = new Map<number, any[]>()
+        const nodesByParent = new Map<string, any[]>()
+        
+        aiNodes.forEach((node: any) => {
+          const level = node.level || 0
+          if (!nodesByLevel.has(level)) {
+            nodesByLevel.set(level, [])
           }
-          const childrenWidth = node.children.reduce((sum: number, child: any) => {
-            return sum + calculateSubtreeWidth(child)
-          }, 0)
-          const gapsWidth = (node.children.length - 1) * siblingGap
-          return Math.max(baseNodeWidth, childrenWidth + gapsWidth)
-        }
-        
-        // 递归计算节点位置
-        const calculateTreePosition = (node: any, x: number, y: number, availableWidth: number) => {
-          node.position = { x, y }
+          nodesByLevel.get(level)!.push(node)
           
-          if (node.children && node.children.length > 0) {
-            const totalChildrenWidth = node.children.reduce((sum: number, child: any) => {
-              return sum + calculateSubtreeWidth(child)
-            }, 0)
-            const totalGapsWidth = (node.children.length - 1) * siblingGap
-            const totalWidth = totalChildrenWidth + totalGapsWidth
-            
-            let currentX = x - totalWidth / 2
-            
-            node.children.forEach((child: any) => {
-              const childWidth = calculateSubtreeWidth(child)
-              calculateTreePosition(child, currentX + childWidth / 2, y + levelHeight, childWidth)
-              currentX += childWidth + siblingGap
-            })
+          if (node.parentId) {
+            if (!nodesByParent.has(node.parentId)) {
+              nodesByParent.set(node.parentId, [])
+            }
+            nodesByParent.get(node.parentId)!.push(node)
           }
+        })
+        
+        // 计算每层的布局
+        const levelPositions = new Map<string, { x: number; y: number }>()
+        
+        // 设置根节点位置
+        if (rootNode) {
+          levelPositions.set(rootNode.id, { x: 0, y: 0 })
         }
         
-        // 计算根节点位置
-        if (rootNode) {
-          const rootWidth = calculateSubtreeWidth(rootNode)
-          calculateTreePosition(rootNode, 0, 0, rootWidth)
+        // 按层级从上到下计算位置
+        const maxLevel = Math.max(...Array.from(nodesByLevel.keys()))
+        
+        for (let level = 1; level <= maxLevel; level++) {
+          const levelNodes = nodesByLevel.get(level) || []
+          const y = level * levelHeight
+          
+          // 按父节点分组
+          const groups = new Map<string, any[]>()
+          levelNodes.forEach((node: any) => {
+            const parentId = node.parentId || 'root'
+            if (!groups.has(parentId)) {
+              groups.set(parentId, [])
+            }
+            groups.get(parentId)!.push(node)
+          })
+          
+          // 计算每个组的位置
+          let currentX = 0
+          const groupEntries = Array.from(groups.entries())
+          
+          // 先计算总宽度，以便居中
+          let totalWidth = 0
+          groupEntries.forEach(([parentId, children], index) => {
+            const groupWidth = children.length * nodeWidth + (children.length - 1) * siblingGap
+            totalWidth += groupWidth
+            if (index < groupEntries.length - 1) {
+              totalWidth += groupGap
+            }
+          })
+          
+          currentX = -totalWidth / 2
+          
+          // 放置每个组的节点
+          groupEntries.forEach(([parentId, children], groupIndex) => {
+            const parentPos = levelPositions.get(parentId)
+            const groupWidth = children.length * nodeWidth + (children.length - 1) * siblingGap
+            
+            // 让组尽量靠近父节点
+            let groupStartX = currentX
+            if (parentPos) {
+              // 如果父节点在这个组的范围内，微调位置让父节点居中
+              const parentRelativeX = parentPos.x - groupStartX
+              const groupCenterOffset = groupWidth / 2 - parentRelativeX
+              if (Math.abs(groupCenterOffset) < groupWidth / 2) {
+                groupStartX += groupCenterOffset * 0.3 // 轻微调整
+              }
+            }
+            
+            children.forEach((child: any, childIndex: number) => {
+              const x = groupStartX + childIndex * (nodeWidth + siblingGap) + nodeWidth / 2
+              levelPositions.set(child.id, { x, y })
+            })
+            
+            currentX += groupWidth
+            if (groupIndex < groupEntries.length - 1) {
+              currentX += groupGap
+            }
+          })
         }
+        
+        // 将计算好的位置应用到节点
+        aiNodes.forEach((node: any) => {
+          const pos = levelPositions.get(node.id)
+          if (pos) {
+            node.position = pos
+          }
+        })
 
         // 转换 AI 返回的节点格式
         const formattedNodes: Node[] = aiNodes.map((node: any, index: number) => {
           const level = node.level || 0
           const parentId = node.parentId
-          const treeNode = nodeMap.get(node.id)
-          const position = treeNode?.position || { x: 0, y: level * levelHeight }
+          const position = levelPositions.get(node.id) || { x: 0, y: level * levelHeight }
           
           // 获取父节点标签
           const parentNode = parentId ? nodeMap.get(parentId) : null

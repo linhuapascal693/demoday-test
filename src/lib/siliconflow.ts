@@ -136,22 +136,54 @@ export async function generateConceptDecode(
 export async function generateFeynmanQuestion(
   concept: string,
   round: number,
-  previousContext: string
+  previousContext: string,
+  userAnswer?: string
 ) {
+  // 检测用户是否表示不理解
+  const isConfused = userAnswer && (
+    userAnswer.includes('不清楚') || 
+    userAnswer.includes('不懂') || 
+    userAnswer.includes('不明白') ||
+    userAnswer.includes('不知道') ||
+    userAnswer.includes('不会') ||
+    userAnswer.length < 5
+  )
+
   const systemPrompt = `你是一个费曼学习法的AI助手。你扮演一个初学者，通过提问来帮助用户验证他们对概念的理解。
 
-要求：
-1. 以初学者的口吻提问
-2. 问题要针对概念的核心理解
+重要规则：
+1. 如果用户表示不理解（如说"不清楚"、"不懂"、回答太短），你要：
+   - 不要继续问更难的问题
+   - 换一种更简单的方式重新提问
+   - 或者给出一个简单的提示/例子引导用户
+   
+2. 以初学者的口吻提问，语气友好、好奇
 3. 根据轮次递进：第一轮基础理解，第二轮深入细节，第三轮应用验证
-4. 语气友好、好奇、略带困惑
-5. 问题要开放，不能是简单的是/否问题`
+4. 问题要开放，不能是简单的是/否问题
+5. 如果用户连续不理解，降低问题难度
 
-  const userPrompt = `概念：${concept}
-轮次：${round}/3
-${previousContext ? `之前的对话：\n${previousContext}` : ''}
+当前状态：${isConfused ? '用户表示不理解，需要简化问题或给出提示' : '正常对话流程'}
 
-请生成第${round}轮的提问。`
+请生成合适的回应。如果是简化版问题，请明确标注【简化版】`
+
+  let userPrompt = `概念：${concept}\n`
+  userPrompt += `轮次：${round}/3\n`
+  
+  if (previousContext) {
+    userPrompt += `之前的对话：\n${previousContext}\n`
+  }
+  
+  if (userAnswer) {
+    userPrompt += `用户刚才回答："${userAnswer}"\n`
+  }
+  
+  if (isConfused) {
+    userPrompt += '\n用户表示不理解，请用更简单的方式提问，或者给出一个简单的例子引导他们。'
+  } else {
+    userPrompt += `\n请生成第${round}轮的提问。`
+  }
+  
+  userPrompt += '\n\n请生成回应：'
 
   return await chatCompletion([
     { role: 'system', content: systemPrompt },
@@ -170,12 +202,18 @@ export async function evaluateFeynmanAnswer(
 2. 准确性：概念理解是否正确
 3. 完整性：是否涵盖关键要点
 
+特殊检测：
+- 如果用户多次表示"不清楚"、"不懂"、回答过短（少于5个字），请在evaluation中添加"needsReview": true
+- 如果用户理解明显有误，请明确指出错误并给出正确解释
+
 输出要求：
 - 综合评分（平均分）
 - 各维度得分和评价
 - 优点列表
 - 建议列表
 - 薄弱点列表
+- needsReview: 是否需要重新学习（布尔值）
+- reviewSuggestion: 如果需要重新学习，给出具体建议
 
 返回JSON格式。`
 
@@ -231,4 +269,12 @@ export async function generateDailyNews(topics: string[]) {
     console.error('Failed to parse news JSON:', error)
     throw new Error('资讯生成失败')
   }
+}
+
+// 通用的资讯生成函数
+export async function generateNews(systemPrompt: string, userPrompt: string): Promise<string> {
+  return await chatCompletion([
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userPrompt }
+  ])
 }

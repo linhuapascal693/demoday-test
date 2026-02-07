@@ -9,9 +9,14 @@ import {
   CheckCircle,
   ExternalLink,
   Clock,
-  BookOpen
+  BookOpen,
+  Loader2,
+  Sparkles,
+  AlertCircle
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
 
 interface NewsItem {
   id: string
@@ -27,84 +32,182 @@ interface NewsItem {
 }
 
 export default function NewsPage() {
+  const { user, session } = useAuth()
   const [news, setNews] = useState<NewsItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isGenerating, setIsGenerating] = useState(false)
   const [filter, setFilter] = useState<'all' | 'unread' | 'favorite'>('all')
+  const [error, setError] = useState('')
+  const [profession, setProfession] = useState('初学者')
+  const [lastGenerated, setLastGenerated] = useState<string | null>(null)
 
+  // 获取用户职业背景
   useEffect(() => {
-    // Simulate API call
-    const loadNews = async () => {
-      setIsLoading(true)
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      const mockNews: NewsItem[] = [
-        {
-          id: '1',
-          title: 'Python 3.12 新特性：性能提升 15%',
-          summary: 'Python 3.12 正式发布，引入了新的编译器优化、改进的错误消息、f-string 性能大幅提升等新特性。',
-          reason: '作为 Python 学习者，了解版本更新有助于选择合适的学习路径和工具链',
-          key_takeaway: 'f-string 性能大幅提升，建议升级体验',
-          source: 'Python官方博客',
-          published_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          topic: 'Python',
-          is_favorite: false,
-          is_read: false
-        },
-        {
-          id: '2',
-          title: '为什么 Python 是数据科学的首选语言？',
-          summary: '从生态、语法、社区三个维度分析 Python 在数据科学领域的统治地位，以及未来发展趋势。',
-          reason: '帮助你理解所学知识的应用场景和价值',
-          key_takeaway: 'Pandas + NumPy 生态是核心竞争力',
-          source: 'DataScienceWeekly',
-          published_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-          topic: 'Python',
-          is_favorite: true,
-          is_read: true
-        },
-        {
-          id: '3',
-          title: '费曼学习法：如何真正掌握一门技术？',
-          summary: '深入解析费曼学习法的四个步骤，以及如何在编程学习中应用这一方法。',
-          reason: '与知识领航员的核心理念相契合，帮助提升学习效率',
-          key_takeaway: '用简单语言解释复杂概念是检验理解的最好方式',
-          source: '知识领航员精选',
-          published_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          topic: '学习方法',
-          is_favorite: true,
-          is_read: true
-        },
-        {
-          id: '4',
-          title: '2024年前端开发趋势报告',
-          summary: 'React、Vue、Angular 三大框架的最新动态，以及新兴技术如 WebAssembly、Edge Computing 的发展前景。',
-          reason: '了解行业趋势，规划学习方向',
-          key_takeaway: 'Server Components 将成为 React 的主流模式',
-          source: 'FrontendFocus',
-          published_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-          topic: '前端开发',
-          is_favorite: false,
-          is_read: false
+    const fetchUserProfession = async () => {
+      if (!user) return
+      
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('profession')
+          .eq('id', user.id)
+          .single()
+        
+        if (profile?.profession) {
+          setProfession(profile.profession)
         }
-      ]
+      } catch (err) {
+        console.error('Error fetching profession:', err)
+      }
+    }
+    
+    fetchUserProfession()
+  }, [user])
 
-      setNews(mockNews)
+  // 加载资讯
+  const loadNews = async () => {
+    if (!user || !session) {
       setIsLoading(false)
+      return
     }
 
-    loadNews()
-  }, [])
+    setIsLoading(true)
+    setError('')
 
-  const toggleFavorite = (id: string) => {
-    setNews(prev => prev.map(item => 
-      item.id === id ? { ...item, is_favorite: !item.is_favorite } : item
-    ))
+    try {
+      const response = await fetch('/api/news', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('获取资讯失败')
+      }
+
+      const result = await response.json()
+      
+      if (result.success) {
+        setNews(result.data)
+        setLastGenerated(result.generated_at)
+        if (result.profession) {
+          setProfession(result.profession)
+        }
+      } else {
+        throw new Error(result.error || '获取资讯失败')
+      }
+    } catch (err: any) {
+      console.error('Error loading news:', err)
+      setError(err.message || '获取资讯失败')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const markAsRead = (id: string) => {
+  useEffect(() => {
+    loadNews()
+  }, [user, session])
+
+  // 手动生成新资讯
+  const handleGenerateNews = async () => {
+    if (!user || !session) {
+      alert('请先登录')
+      return
+    }
+
+    setIsGenerating(true)
+    
+    try {
+      // 删除今天的旧资讯，强制重新生成
+      const today = new Date().toISOString().split('T')[0]
+      await supabase
+        .from('news')
+        .delete()
+        .eq('user_id', user.id)
+        .gte('created_at', today)
+      
+      // 重新加载
+      await loadNews()
+    } catch (err) {
+      console.error('Error generating news:', err)
+      alert('生成资讯失败，请重试')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const toggleFavorite = async (id: string, currentValue: boolean) => {
+    if (!session) return
+
+    // 乐观更新
+    setNews(prev => prev.map(item => 
+      item.id === id ? { ...item, is_favorite: !currentValue } : item
+    ))
+
+    try {
+      const response = await fetch('/api/news', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          newsId: id,
+          action: 'toggle_favorite',
+          value: !currentValue
+        })
+      })
+
+      if (!response.ok) {
+        // 回滚
+        setNews(prev => prev.map(item => 
+          item.id === id ? { ...item, is_favorite: currentValue } : item
+        ))
+      }
+    } catch (err) {
+      console.error('Error toggling favorite:', err)
+      // 回滚
+      setNews(prev => prev.map(item => 
+        item.id === id ? { ...item, is_favorite: currentValue } : item
+      ))
+    }
+  }
+
+  const markAsRead = async (id: string) => {
+    if (!session) return
+
+    // 乐观更新
     setNews(prev => prev.map(item => 
       item.id === id ? { ...item, is_read: true } : item
     ))
+
+    try {
+      const response = await fetch('/api/news', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          newsId: id,
+          action: 'mark_read',
+          value: true
+        })
+      })
+
+      if (!response.ok) {
+        // 回滚
+        setNews(prev => prev.map(item => 
+          item.id === id ? { ...item, is_read: false } : item
+        ))
+      }
+    } catch (err) {
+      console.error('Error marking as read:', err)
+      // 回滚
+      setNews(prev => prev.map(item => 
+        item.id === id ? { ...item, is_read: false } : item
+      ))
+    }
   }
 
   const filteredNews = news.filter(item => {
@@ -114,12 +217,14 @@ export default function NewsPage() {
   })
 
   const unreadCount = news.filter(item => !item.is_read).length
-  const allRead = unreadCount === 0
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="loading-spinner" />
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 text-[#e8a87c] animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">正在加载资讯...</p>
+        </div>
       </div>
     )
   }
@@ -129,13 +234,49 @@ export default function NewsPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold gradient-text mb-2">
-            📰 价值资讯流
-          </h1>
-          <p className="text-gray-400">
-            每日精选 3-5 条，早 8:00 更新
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold gradient-text mb-2">
+                📰 价值资讯流
+              </h1>
+              <p className="text-gray-400">
+                每日精选 3-5 条，针对{profession}职业背景定制
+              </p>
+            </div>
+            <button
+              onClick={handleGenerateNews}
+              disabled={isGenerating}
+              className="btn-secondary flex items-center space-x-2"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>生成中...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  <span>生成新资讯</span>
+                </>
+              )}
+            </button>
+          </div>
+          {lastGenerated && (
+            <p className="text-xs text-gray-500 mt-2">
+              上次更新: {formatDate(lastGenerated)}
+            </p>
+          )}
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="glass-card p-4 mb-6 border-red-500/30">
+            <div className="flex items-center space-x-2 text-red-400">
+              <AlertCircle className="w-5 h-5" />
+              <span>{error}</span>
+            </div>
+          </div>
+        )}
 
         {/* Filter Tabs */}
         <div className="flex space-x-2 mb-6">
@@ -216,7 +357,7 @@ export default function NewsPage() {
                   </button>
                   
                   <button
-                    onClick={() => toggleFavorite(item.id)}
+                    onClick={() => toggleFavorite(item.id, item.is_favorite)}
                     className={`p-2 rounded-lg transition-all ${
                       item.is_favorite
                         ? 'text-yellow-400'
@@ -230,6 +371,17 @@ export default function NewsPage() {
                   <button
                     className="p-2 rounded-lg text-gray-400 hover:text-blue-400 hover:bg-white/5 transition-all"
                     title="分享"
+                    onClick={() => {
+                      if (navigator.share) {
+                        navigator.share({
+                          title: item.title,
+                          text: item.summary,
+                        })
+                      } else {
+                        navigator.clipboard.writeText(`${item.title}\n${item.summary}`)
+                        alert('已复制到剪贴板')
+                      }
+                    }}
                   >
                     <Share2 className="w-5 h-5" />
                   </button>
@@ -237,6 +389,10 @@ export default function NewsPage() {
                   <button
                     className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all"
                     title="查看原文"
+                    onClick={() => {
+                      // 模拟跳转，实际应该打开外部链接
+                      alert(`查看原文: ${item.source}`)
+                    }}
                   >
                     <ExternalLink className="w-5 h-5" />
                   </button>
@@ -253,20 +409,15 @@ export default function NewsPage() {
             <p className="text-gray-400">
               {filter === 'favorite' ? '暂无收藏的资讯' : '暂无相关资讯'}
             </p>
+            {filter === 'all' && (
+              <button
+                onClick={handleGenerateNews}
+                className="btn-primary mt-4"
+              >
+                生成今日资讯
+              </button>
+            )}
           </div>
-        )}
-
-        {/* All Read Message */}
-        {allRead && filter === 'all' && news.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-8"
-          >
-            <p className="text-[#85dcb8]">
-              🎉 今日已读完，明天早 8:00 更新新内容
-            </p>
-          </motion.div>
         )}
       </div>
     </div>

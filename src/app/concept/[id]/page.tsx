@@ -15,7 +15,8 @@ import {
   Users,
   Loader2,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  CheckCircle
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -53,6 +54,8 @@ function ConceptContent() {
   const [selectedAnalogy, setSelectedAnalogy] = useState<string | null>(null)
   const [conceptData, setConceptData] = useState<ConceptData | null>(null)
   const [userProfession, setUserProfession] = useState<string>('初学者')
+  const [isMastered, setIsMastered] = useState(false)
+  const [isMarking, setIsMarking] = useState(false)
 
   // 调用 AI API 生成概念解码
   const generateConceptWithAI = async () => {
@@ -149,7 +152,12 @@ function ConceptContent() {
       }
 
       // 检查 AI 返回的内容是否针对职业背景，如果不是则使用默认模板
+      console.log('AI返回的data:', data)
+      console.log('检查isPersonalized - data.who:', data.who)
+      console.log('检查isPersonalized - data.what:', data.what)
+      console.log('检查isPersonalized - userProfession:', userProfession)
       const isPersonalized = data.who && data.who.includes(userProfession)
+      console.log('isPersonalized结果:', isPersonalized)
       
       if (!isPersonalized) {
         // AI 没有针对职业背景定制，使用我们的模板
@@ -261,6 +269,30 @@ function ConceptContent() {
     
     fetchUserProfession()
   }, [user])
+
+  // 检查该概念是否已标记为已理解
+  useEffect(() => {
+    const checkMasteredStatus = async () => {
+      if (!user || !conceptId) return
+
+      try {
+        const { data, error } = await supabase
+          .from('learning_progress')
+          .select('status')
+          .eq('user_id', user.id)
+          .eq('concept_id', conceptId)
+          .single()
+
+        if (!error && data?.status === 'mastered') {
+          setIsMastered(true)
+        }
+      } catch (err) {
+        console.error('Error checking mastered status:', err)
+      }
+    }
+
+    checkMasteredStatus()
+  }, [user, conceptId])
   
   useEffect(() => {
     if (userProfession) {
@@ -270,6 +302,133 @@ function ConceptContent() {
 
   const handleStartFeynman = () => {
     window.location.href = `/feynman/${conceptId}?name=${encodeURIComponent(conceptName)}&topic=${encodeURIComponent(topic)}`
+  }
+
+  const handleMarkAsMastered = async () => {
+    if (!user) {
+      alert('请先登录')
+      return
+    }
+
+    setIsMarking(true)
+    
+    try {
+      // 1. 更新学习进度
+      const { error: progressError } = await supabase
+        .from('learning_progress')
+        .upsert({
+          user_id: user.id,
+          concept_id: conceptId,
+          concept_name: conceptName,
+          topic: topic,
+          status: 'mastered',
+          mastery_level: 100,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,concept_id'
+        })
+
+      if (progressError) {
+        console.error('Error updating progress:', progressError)
+        throw progressError
+      }
+
+      // 2. 更新学习统计
+      const { data: statsData, error: statsError } = await supabase
+        .from('learning_stats')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+
+      if (statsError && statsError.code !== 'PGRST116') {
+        console.error('Error fetching stats:', statsError)
+      }
+
+      if (statsData) {
+        await supabase
+          .from('learning_stats')
+          .update({
+            mastered_concepts: (statsData.mastered_concepts || 0) + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+      } else {
+        await supabase
+          .from('learning_stats')
+          .insert({
+            user_id: user.id,
+            learning_topics: 1,
+            mastered_concepts: 1,
+            feynman_sessions: 0,
+            streak_days: 1,
+            last_study_date: new Date().toISOString().split('T')[0]
+          })
+      }
+
+      // 3. 检查是否触发成就
+      await checkAchievements()
+
+      setIsMastered(true)
+      alert('🎉 恭喜！已标记为已理解，学习进度已更新')
+    } catch (error) {
+      console.error('Error marking as mastered:', error)
+      alert('标记失败，请重试')
+    } finally {
+      setIsMarking(false)
+    }
+  }
+
+  const checkAchievements = async () => {
+    if (!user) return
+
+    try {
+      // 获取当前学习统计
+      const { data: stats } = await supabase
+        .from('learning_stats')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+
+      if (!stats) return
+
+      // 获取当前成就
+      const { data: userData } = await supabase
+        .from('profiles')
+        .select('achievements')
+        .eq('id', user.id)
+        .single()
+
+      const currentAchievements = userData?.achievements || []
+      const newAchievements = [...currentAchievements]
+
+      // 检查"初学乍练"成就（掌握1个概念）
+      if (stats.mastered_concepts >= 1 && !currentAchievements.includes('first_step')) {
+        newAchievements.push('first_step')
+      }
+
+      // 检查"渐入佳境"成就（掌握5个概念）
+      if (stats.mastered_concepts >= 5 && !currentAchievements.includes('getting_better')) {
+        newAchievements.push('getting_better')
+      }
+
+      // 检查"融会贯通"成就（掌握10个概念）
+      if (stats.mastered_concepts >= 10 && !currentAchievements.includes('master')) {
+        newAchievements.push('master')
+      }
+
+      // 更新成就
+      if (newAchievements.length > currentAchievements.length) {
+        await supabase
+          .from('profiles')
+          .update({ achievements: newAchievements })
+          .eq('id', user.id)
+        
+        const unlocked = newAchievements.filter(a => !currentAchievements.includes(a))
+        console.log('解锁新成就:', unlocked)
+      }
+    } catch (error) {
+      console.error('Error checking achievements:', error)
+    }
   }
 
   if (isLoading) {
@@ -529,9 +688,29 @@ function ConceptContent() {
             <span>进入费曼演练</span>
           </button>
           
-          <button className="btn-secondary flex items-center justify-center space-x-2 flex-1">
-            <Target className="w-5 h-5" />
-            <span>标记为已理解</span>
+          <button
+            onClick={handleMarkAsMastered}
+            disabled={isMarking || isMastered}
+            className={`btn-secondary flex items-center justify-center space-x-2 flex-1 ${
+              isMastered ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : ''
+            }`}
+          >
+            {isMarking ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>标记中...</span>
+              </>
+            ) : isMastered ? (
+              <>
+                <CheckCircle className="w-5 h-5" />
+                <span>已理解</span>
+              </>
+            ) : (
+              <>
+                <Target className="w-5 h-5" />
+                <span>标记为已理解</span>
+              </>
+            )}
           </button>
           
           <button

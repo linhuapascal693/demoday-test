@@ -12,8 +12,12 @@ import {
   RotateCcw,
   Save,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Loader2,
+  MessageSquare
 } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
 
 interface Message {
   id: string
@@ -36,6 +40,7 @@ export default function FeynmanPage() {
   const params = useParams()
   const conceptId = params.id as string
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const { user } = useAuth()
 
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -43,41 +48,144 @@ export default function FeynmanPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null)
+  const [conceptName, setConceptName] = useState('概念')
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [confusedCount, setConfusedCount] = useState(0)
+  const [showBackToLearn, setShowBackToLearn] = useState(false)
+
+  // 获取概念名称
+  useEffect(() => {
+    const fetchConceptName = async () => {
+      try {
+        // 从知识图谱节点中获取概念名称
+        // 这里简化处理，实际应该从数据库查询
+        const conceptNames: { [key: string]: string } = {
+          'variables': '变量与类型',
+          'operators': '运算符',
+          'control-flow': '流程控制',
+          'list-dict': '列表与字典',
+          'functions': '函数定义',
+          'modules': '模块导入',
+          'classes': '类与对象',
+          'inheritance': '继承多态',
+          'pip': '包管理器',
+          'jupyter': 'Jupyter环境',
+          'vscode': 'VSCode配置'
+        }
+        setConceptName(conceptNames[conceptId] || conceptId)
+      } catch (error) {
+        console.error('Error fetching concept:', error)
+      }
+    }
+
+    fetchConceptName()
+  }, [conceptId])
 
   // Initialize conversation
   useEffect(() => {
     const initConversation = async () => {
-      setIsLoading(true)
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      if (!conceptName || conceptName === '概念') return
       
-      setMessages([
-        {
-          id: '1',
-          role: 'ai',
-          content: '你好！我是刚学编程的小白。能给我讲讲什么是变量吗？我不太理解这个概念...',
-          round: 1
+      setIsLoading(true)
+      
+      try {
+        // 创建费曼演练会话
+        const { data: session, error: sessionError } = await supabase
+          .from('feynman_sessions')
+          .insert({
+            user_id: user?.id,
+            concept_id: conceptId,
+            concept_name: conceptName,
+            status: 'in_progress'
+          })
+          .select()
+          .single()
+        
+        if (sessionError) {
+          console.error('Error creating session:', sessionError)
+        } else {
+          setSessionId(session.id)
         }
-      ])
-      setCurrentRound(1)
-      setIsLoading(false)
+
+        // 调用 AI API 生成第一个问题
+        const response = await fetch('/api/feynman', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            concept: conceptName,
+            round: 1,
+            conversation: ''
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to get AI response')
+        }
+
+        const data = await response.json()
+        
+        setMessages([
+          {
+            id: '1',
+            role: 'ai',
+            content: data.question || `你好！我是刚学编程的小白。能给我讲讲什么是${conceptName}吗？我不太理解这个概念...`,
+            round: 1
+          }
+        ])
+        setCurrentRound(1)
+      } catch (error) {
+        console.error('Error initializing conversation:', error)
+        // 使用默认问题
+        setMessages([
+          {
+            id: '1',
+            role: 'ai',
+            content: `你好！我是刚学编程的小白。能给我讲讲什么是${conceptName}吗？我不太理解这个概念...`,
+            round: 1
+          }
+        ])
+        setCurrentRound(1)
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    initConversation()
-  }, [conceptId])
+    if (user) {
+      initConversation()
+    }
+  }, [conceptId, conceptName, user])
 
   // Auto scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // 检测用户是否表示不理解
+  const isConfusedAnswer = (answer: string): boolean => {
+    const confusedPatterns = ['不清楚', '不懂', '不明白', '不知道', '不会', '不理解', '没懂', '不懂什么意思']
+    return confusedPatterns.some(pattern => answer.includes(pattern)) || answer.length < 5
+  }
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return
+
+    const userAnswer = input.trim()
+    
+    // 检测用户是否表示不理解
+    const isConfused = isConfusedAnswer(userAnswer)
+    if (isConfused) {
+      setConfusedCount(prev => prev + 1)
+    }
+    
+    // 如果连续2次表示不理解，显示返回学习按钮
+    if (confusedCount + (isConfused ? 1 : 0) >= 2) {
+      setShowBackToLearn(true)
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input,
+      content: userAnswer,
       round: currentRound
     }
 
@@ -85,45 +193,99 @@ export default function FeynmanPage() {
     setInput('')
     setIsLoading(true)
 
-    // Simulate AI response
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    try {
+      // 构建对话历史
+      const conversationHistory = messages
+        .map(m => `${m.role === 'ai' ? 'AI' : '用户'}: ${m.content}`)
+        .join('\n')
 
-    let aiResponse = ''
-    let nextRound = currentRound
+      if (currentRound >= 3) {
+        // 完成演练，进行评估
+        const response = await fetch('/api/feynman', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            concept: conceptName,
+            round: currentRound,
+            conversation: conversationHistory + `\n用户: ${userAnswer}`,
+            evaluate: true
+          })
+        })
 
-    if (currentRound === 1) {
-      aiResponse = '哦，原来是这样！那变量和常量有什么区别呢？什么时候应该用变量而不是常量？'
-      nextRound = 2
-    } else if (currentRound === 2) {
-      aiResponse = '明白了！那你能给我举个例子吗？比如用变量来存储学生成绩，应该怎么写？'
-      nextRound = 3
-    } else if (currentRound === 3) {
-      // Complete the session
-      aiResponse = '太感谢了！我现在对变量有了更清晰的理解。'
-      setIsComplete(true)
+        if (response.ok) {
+          const data = await response.json()
+          setEvaluation(data.evaluation)
+          setIsComplete(true)
+          
+          // 保存评估结果到数据库
+          if (sessionId) {
+            await supabase
+              .from('feynman_sessions')
+              .update({
+                status: 'completed',
+                final_score: data.evaluation?.final_score,
+                conversation_data: { messages: [...messages, userMessage] }
+              })
+              .eq('id', sessionId)
+          }
+        }
+      } else {
+        // 继续下一轮对话
+        const response = await fetch('/api/feynman', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            concept: conceptName,
+            round: currentRound + 1,
+            conversation: conversationHistory + `\n用户: ${userAnswer}`,
+            userAnswer: userAnswer // 传递用户回答，用于 AI 判断是否困惑
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to get AI response')
+        }
+
+        const data = await response.json()
+        
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'ai',
+          content: data.question,
+          round: currentRound + 1
+        }
+
+        setMessages(prev => [...prev, aiMessage])
+        setCurrentRound(prev => prev + 1)
+      }
+    } catch (error) {
+      console.error('Error in conversation:', error)
+      // 使用默认回复
+      let defaultResponse = ''
       
-      // Mock evaluation
-      setEvaluation({
-        final_score: 4.2,
-        clarity_score: 4.5,
-        accuracy_score: 4.0,
-        completeness_score: 3.5,
-        feedback: '整体解释清晰，类比生动形象。建议补充变量命名规范的内容。',
-        strengths: ['类比生动，用"盒子"解释很形象', '逻辑清晰，循序渐进', '举例贴近实际'],
-        weaknesses: ['未提及变量命名规范', '变量作用域概念未涉及']
-      })
+      if (isConfused) {
+        // 如果用户表示不理解，给出简化版问题或提示
+        defaultResponse = `没关系，让我换个方式问。${conceptName}其实就像...（给出一个简单的类比）。你能试着用自己的话说说看吗？`
+      } else if (currentRound === 1) {
+        defaultResponse = `哦，原来是这样！那${conceptName}和其他相关概念有什么区别呢？`
+      } else if (currentRound === 2) {
+        defaultResponse = `明白了！那你能给我举个例子吗？比如在实际工作中怎么使用${conceptName}？`
+      } else {
+        defaultResponse = `太感谢了！我现在对${conceptName}有了更清晰的理解。`
+        setIsComplete(true)
+      }
+      
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'ai',
+        content: defaultResponse,
+        round: currentRound + 1
+      }
+      setMessages(prev => [...prev, aiMessage])
+      setCurrentRound(prev => prev + 1)
+    } finally {
+      setIsLoading(false)
     }
-
-    const aiMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      role: 'ai',
-      content: aiResponse,
-      round: nextRound
-    }
-
-    setMessages(prev => [...prev, aiMessage])
-    setCurrentRound(nextRound)
-    setIsLoading(false)
   }
 
   const handleRestart = () => {
@@ -131,6 +293,7 @@ export default function FeynmanPage() {
     setCurrentRound(0)
     setIsComplete(false)
     setEvaluation(null)
+    setSessionId(null)
     // Re-initialize
     window.location.reload()
   }
@@ -172,7 +335,7 @@ export default function FeynmanPage() {
               <span>返回概念解码</span>
             </button>
             <h1 className="text-2xl font-bold gradient-text">
-              🎓 费曼演练场 - 变量与类型
+              🎓 费曼演练场 - {conceptName}
             </h1>
           </div>
           
@@ -183,6 +346,30 @@ export default function FeynmanPage() {
             </div>
           )}
         </div>
+
+        {/* 提示：连续不理解时显示 */}
+        {showBackToLearn && !isComplete && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-card p-4 mb-4 border-amber-500/30 bg-amber-500/10"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <AlertCircle className="w-5 h-5 text-amber-400" />
+                <span className="text-amber-200 text-sm">
+                  看起来你对这个概念还有些困惑，建议先回到概念解码重新学习
+                </span>
+              </div>
+              <button
+                onClick={() => window.history.back()}
+                className="px-4 py-2 bg-amber-500/20 text-amber-400 rounded-lg text-sm hover:bg-amber-500/30 transition-colors"
+              >
+                返回学习
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {!isComplete ? (
           <>
@@ -199,31 +386,37 @@ export default function FeynmanPage() {
                     }`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-lg p-4 ${
-                        message.role === 'user'
-                          ? 'bg-gradient-to-r from-[#e8a87c] to-[#c38d9e] text-white'
-                          : 'bg-white/10 text-gray-200'
+                      className={`flex items-start space-x-3 max-w-[80%] ${
+                        message.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''
                       }`}
                     >
-                      <div className="flex items-center space-x-2 mb-2">
-                        {message.role === 'ai' ? (
-                          <>
-                            <Bot className="w-4 h-4" />
-                            <span className="text-sm font-medium">AI（初学者）</span>
-                            {message.round && (
-                              <span className="text-xs text-gray-400">
-                                追问{message.round}/3
-                              </span>
-                            )}
-                          </>
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          message.role === 'user'
+                            ? 'bg-[#e8a87c]/20'
+                            : 'bg-[#85dcb8]/20'
+                        }`}
+                      >
+                        {message.role === 'user' ? (
+                          <User className="w-5 h-5 text-[#e8a87c]" />
                         ) : (
-                          <>
-                            <User className="w-4 h-4" />
-                            <span className="text-sm font-medium">你</span>
-                          </>
+                          <Bot className="w-5 h-5 text-[#85dcb8]" />
                         )}
                       </div>
-                      <p className="break-words whitespace-pre-wrap">{message.content}</p>
+                      <div
+                        className={`px-4 py-3 rounded-2xl ${
+                          message.role === 'user'
+                            ? 'bg-[#e8a87c]/20 text-white rounded-br-md'
+                            : 'bg-white/5 text-gray-200 rounded-bl-md'
+                        }`}
+                      >
+                        <p className="text-sm leading-relaxed">{message.content}</p>
+                        {message.round && (
+                          <span className="text-xs text-gray-500 mt-1 block">
+                            第{message.round}轮
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </motion.div>
                 ))}
@@ -234,13 +427,14 @@ export default function FeynmanPage() {
                     animate={{ opacity: 1 }}
                     className="flex justify-start"
                   >
-                    <div className="bg-white/10 rounded-lg p-4">
-                      <div className="flex items-center space-x-2">
-                        <Bot className="w-4 h-4" />
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-full bg-[#85dcb8]/20 flex items-center justify-center">
+                        <Bot className="w-5 h-5 text-[#85dcb8]" />
+                      </div>
+                      <div className="px-4 py-3 rounded-2xl bg-white/5 rounded-bl-md">
+                        <div className="flex items-center space-x-2">
+                          <Loader2 className="w-4 h-4 text-[#85dcb8] animate-spin" />
+                          <span className="text-sm text-gray-400">AI正在思考...</span>
                         </div>
                       </div>
                     </div>
@@ -252,130 +446,143 @@ export default function FeynmanPage() {
             </div>
 
             {/* Input Area */}
-            <div className="glass-card p-4">
-              <div className="flex items-center space-x-4">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="输入你的回答..."
-                  disabled={isLoading}
-                  className="flex-1 bg-transparent border-none outline-none text-white placeholder-gray-500"
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={isLoading || !input.trim()}
-                  className="btn-primary p-3 disabled:opacity-50"
-                >
-                  <Send className="w-5 h-5" />
-                </button>
+            {!isComplete && (
+              <div className="glass-card p-4">
+                <div className="flex items-center space-x-4">
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                    placeholder="用简单易懂的方式解释这个概念..."
+                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-[#e8a87c]/50"
+                    disabled={isLoading}
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={!input.trim() || isLoading}
+                    className="px-6 py-3 bg-gradient-to-r from-[#e8a87c] to-[#c38d9e] text-white rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    <span>发送</span>
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                <p className="text-xs text-gray-500 mt-3">
+                  💡 提示：用简单的语言和类比来解释，就像教一个初学者一样
+                </p>
               </div>
-            </div>
+            )}
           </>
         ) : (
-          /* Evaluation Report */
+          /* Evaluation Result */
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             className="glass-card p-8"
           >
-            <h2 className="text-2xl font-bold text-white mb-6 text-center">
-              📊 演练报告 - 变量与类型
-            </h2>
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#e8a87c] to-[#85dcb8] flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-10 h-10 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">演练完成！</h2>
+              <p className="text-gray-400">恭喜完成费曼学习法演练</p>
+            </div>
 
             {evaluation && (
               <>
-                {/* Overall Score */}
-                <div className="text-center mb-8">
-                  <p className="text-gray-400 mb-2">综合评分</p>
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold text-white mb-4">综合评分</h3>
                   {renderStars(evaluation.final_score)}
                 </div>
 
-                {/* Dimension Scores */}
                 <div className="grid grid-cols-3 gap-4 mb-8">
-                  <div className="text-center p-4 rounded-lg bg-white/5">
-                    <p className="text-sm text-gray-400 mb-1">清晰度</p>
+                  <div className="glass-card p-4 text-center">
                     <p className="text-2xl font-bold text-[#e8a87c]">{evaluation.clarity_score}</p>
-                    <p className="text-xs text-green-400">优秀</p>
+                    <p className="text-sm text-gray-400">清晰度</p>
                   </div>
-                  <div className="text-center p-4 rounded-lg bg-white/5">
-                    <p className="text-sm text-gray-400 mb-1">准确性</p>
-                    <p className="text-2xl font-bold text-[#e8a87c]">{evaluation.accuracy_score}</p>
-                    <p className="text-xs text-green-400">良好</p>
+                  <div className="glass-card p-4 text-center">
+                    <p className="text-2xl font-bold text-[#85dcb8]">{evaluation.accuracy_score}</p>
+                    <p className="text-sm text-gray-400">准确性</p>
                   </div>
-                  <div className="text-center p-4 rounded-lg bg-white/5">
-                    <p className="text-sm text-gray-400 mb-1">完整性</p>
-                    <p className="text-2xl font-bold text-[#e8a87c]">{evaluation.completeness_score}</p>
-                    <p className="text-xs text-yellow-400">待加强</p>
+                  <div className="glass-card p-4 text-center">
+                    <p className="text-2xl font-bold text-[#c38d9e]">{evaluation.completeness_score}</p>
+                    <p className="text-sm text-gray-400">完整性</p>
                   </div>
                 </div>
 
-                {/* Feedback */}
+                {/* 如果需要重新学习的提示 */}
+                {evaluation.needsReview && (
+                  <div className="mb-6 glass-card p-4 border-amber-500/30 bg-amber-500/10">
+                    <div className="flex items-start space-x-3">
+                      <AlertCircle className="w-6 h-6 text-amber-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h3 className="text-amber-400 font-semibold mb-2">建议重新学习</h3>
+                        <p className="text-amber-200/80 text-sm mb-3">
+                          {evaluation.reviewSuggestion || '你对这个概念的理解还不够深入，建议回到概念解码页面重新学习。'}
+                        </p>
+                        <button
+                          onClick={() => window.history.back()}
+                          className="px-4 py-2 bg-amber-500/20 text-amber-400 rounded-lg text-sm hover:bg-amber-500/30 transition-colors"
+                        >
+                          返回概念解码
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-white mb-3">总体评价</h3>
-                  <p className="text-gray-300 bg-white/5 p-4 rounded-lg">
-                    {evaluation.feedback}
-                  </p>
-                </div>
-
-                {/* Strengths */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
-                    <CheckCircle className="w-5 h-5 mr-2 text-green-400" />
-                    优点
+                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center space-x-2">
+                    <MessageSquare className="w-5 h-5 text-[#e8a87c]" />
+                    <span>评价反馈</span>
                   </h3>
-                  <ul className="space-y-2">
-                    {evaluation.strengths.map((strength, index) => (
-                      <li key={index} className="flex items-start space-x-2 text-gray-300">
-                        <span className="text-green-400 mt-1">✓</span>
-                        <span>{strength}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <p className="text-gray-300 bg-white/5 rounded-xl p-4">{evaluation.feedback}</p>
                 </div>
 
-                {/* Weaknesses */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
-                    <AlertCircle className="w-5 h-5 mr-2 text-yellow-400" />
-                    薄弱点
-                  </h3>
-                  <ul className="space-y-2">
-                    {evaluation.weaknesses.map((weakness, index) => (
-                      <li key={index} className="flex items-start space-x-2 text-gray-300">
-                        <span className="text-yellow-400 mt-1">!</span>
-                        <span>{weakness}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <button className="btn-primary flex items-center justify-center space-x-2 flex-1">
-                    <Save className="w-5 h-5" />
-                    <span>保存笔记</span>
-                  </button>
-                  
-                  <button
-                    onClick={handleRestart}
-                    className="btn-secondary flex items-center justify-center space-x-2 flex-1"
-                  >
-                    <RotateCcw className="w-5 h-5" />
-                    <span>重新演练</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => window.history.back()}
-                    className="btn-secondary flex items-center justify-center space-x-2"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                    <span>返回学习</span>
-                  </button>
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-3 text-[#85dcb8]">亮点</h3>
+                    <ul className="space-y-2">
+                      {evaluation.strengths.map((strength, index) => (
+                        <li key={index} className="flex items-start space-x-2 text-gray-300">
+                          <span className="text-[#85dcb8] mt-1">✓</span>
+                          <span className="text-sm">{strength}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-3 text-[#c38d9e]">改进建议</h3>
+                    <ul className="space-y-2">
+                      {evaluation.weaknesses.map((weakness, index) => (
+                        <li key={index} className="flex items-start space-x-2 text-gray-300">
+                          <span className="text-[#c38d9e] mt-1">•</span>
+                          <span className="text-sm">{weakness}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </>
             )}
+
+            <div className="flex justify-center space-x-4 mt-8">
+              <button
+                onClick={handleRestart}
+                className="px-6 py-3 glass-card text-white rounded-xl font-medium hover:bg-white/10 transition-colors flex items-center space-x-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>重新演练</span>
+              </button>
+              <button
+                onClick={() => window.history.back()}
+                className="px-6 py-3 bg-gradient-to-r from-[#e8a87c] to-[#c38d9e] text-white rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center space-x-2"
+              >
+                <Save className="w-4 h-4" />
+                <span>返回图谱</span>
+              </button>
+            </div>
           </motion.div>
         )}
       </div>
