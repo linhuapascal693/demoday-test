@@ -190,7 +190,7 @@ function KnowledgeMapContent() {
         })
         
         // 建立父子关系
-        let rootNode = null
+        let rootNode: any = null
         aiNodes.forEach((node: any) => {
           if (node.parentId && nodeMap.has(node.parentId)) {
             nodeMap.get(node.parentId).children.push(nodeMap.get(node.id))

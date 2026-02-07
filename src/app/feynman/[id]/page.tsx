@@ -36,6 +36,7 @@ interface EvaluationResult {
   strengths: string[]
   weaknesses: string[]
   needsReview?: boolean
+  reviewSuggestion?: string
 }
 
 export default function FeynmanPage() {
