@@ -1108,7 +1108,7 @@ export default function FiveWOneHCard({ data, conceptName }: FiveWOneHCardProps)
                       style={{
                         background: `linear-gradient(135deg, ${cardConfig[flippedCard].color}30, ${cardConfig[flippedCard].color}20)`,
                         color: cardConfig[flippedCard].color,
-                        boxShadow: `0 4px 15px ${cardConfig[flippedCard.color]}40`
+                        boxShadow: `0 4px 15px ${cardConfig[flippedCard].color}40`
                       }}
                     >
                       关闭
