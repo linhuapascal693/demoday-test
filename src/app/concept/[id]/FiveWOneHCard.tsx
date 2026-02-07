@@ -153,7 +153,7 @@ export default function FiveWOneHCard({ data, conceptName }: FiveWOneHCardProps)
     setFlippedCard(null)
   }
 
-  const handleRetry = (type: CardType) => {
+  const handleRetry = (type: Exclude<CardType, null>) => {
     // 清除之前的内容，重新生成
     setCardDetails(prev => ({
       ...prev,
