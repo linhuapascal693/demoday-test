@@ -1,26 +1,315 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0a0f;
+  --foreground: #e8e8f0;
+  --planet-warm: #e8a87c;
+  --planet-warm-light: #f4c2a1;
+  --planet-cool: #85dcb8;
+  --planet-cool-light: #a8e6cf;
+  --ring-glow: #41b3a3;
+  --star-bright: #ffffff;
+  --nebula-purple: #2d1b4e;
+  --nebula-blue: #1a1a3e;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-planet-warm: var(--planet-warm);
+  --color-planet-cool: var(--planet-cool);
+  --color-ring-glow: var(--ring-glow);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
+  background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Starfield Background Animation */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.star {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  animation: twinkle 3s infinite ease-in-out;
+}
+
+/* Planet Glow Effect */
+.planet-glow {
+  box-shadow: 
+    0 0 20px rgba(232, 168, 124, 0.4),
+    0 0 40px rgba(232, 168, 124, 0.2),
+    0 0 60px rgba(232, 168, 124, 0.1);
+}
+
+.planet-glow-cool {
+  box-shadow: 
+    0 0 20px rgba(133, 220, 184, 0.4),
+    0 0 40px rgba(133, 220, 184, 0.2),
+    0 0 60px rgba(133, 220, 184, 0.1);
+}
+
+/* Ring Animation */
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.ring-rotate {
+  animation: rotate 20s linear infinite;
+}
+
+/* Floating Animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.floating {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Pulse Glow */
+@keyframes pulse-glow {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(65, 179, 163, 0.4);
+  }
+  50% { 
+    box-shadow: 0 0 40px rgba(65, 179, 163, 0.6), 0 0 60px rgba(65, 179, 163, 0.3);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Glassmorphism Card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Gradient Text */
+.gradient-text {
+  background: linear-gradient(135deg, #e8a87c 0%, #85dcb8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Button Styles */
+.btn-primary {
+  background: linear-gradient(135deg, #e8a87c 0%, #c38d9e 100%);
+  color: #0a0a0f;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(232, 168, 124, 0.4);
+}
+
+.btn-secondary {
+  background: rgba(133, 220, 184, 0.1);
+  color: #85dcb8;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(133, 220, 184, 0.3);
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: rgba(133, 220, 184, 0.2);
+  border-color: rgba(133, 220, 184, 0.5);
+}
+
+/* Input Styles */
+.input-cosmic {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: var(--foreground);
+  transition: all 0.3s ease;
+}
+
+.input-cosmic:focus {
+  outline: none;
+  border-color: var(--planet-warm);
+  box-shadow: 0 0 0 3px rgba(232, 168, 124, 0.1);
+}
+
+.input-cosmic::placeholder {
+  color: rgba(232, 232, 240, 0.4);
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(232, 168, 124, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(232, 168, 124, 0.5);
+}
+
+/* Loading Animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--planet-warm);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+/* Status Indicators */
+.status-not-started {
+  background: #3b82f6;
+}
+
+.status-learning {
+  background: #f59e0b;
+}
+
+.status-mastered {
+  background: #10b981;
+}
+
+/* Node Styles for Knowledge Map */
+.node-default {
+  background: rgba(59, 130, 246, 0.2);
+  border: 2px solid #3b82f6;
+}
+
+.node-learning {
+  background: rgba(245, 158, 11, 0.2);
+  border: 2px solid #f59e0b;
+}
+
+.node-mastered {
+  background: rgba(16, 185, 129, 0.2);
+  border: 2px solid #10b981;
+}
+
+/* Hide Next.js dev indicator in development */
+[data-nextjs-dev-indicator] {
+  display: none !important;
+}
+
+/* React Flow Controls - 更简洁的样式 */
+.react-flow__controls {
+  bottom: 24px !important;
+  left: 24px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+.react-flow__controls-button {
+  background: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  width: 32px !important;
+  height: 32px !important;
+}
+
+.react-flow__controls-button:hover {
+  background: rgba(51, 65, 85, 0.9) !important;
+  color: white !important;
+}
+
+.react-flow__controls-button svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* React Flow 边的样式 - 确保连线可见 */
+.react-flow__edge-path {
+  stroke: #e8a87c !important;
+  stroke-width: 3px !important;
+}
+
+.react-flow__connection-line {
+  stroke: #e8a87c !important;
+  stroke-width: 3px !important;
+}
+
+/* React Flow 箭头标记 */
+.react-flow__arrowhead {
+  fill: #e8a87c !important;
+  fill-opacity: 1 !important;
+}
+
+/* 确保 React Flow 容器正确显示 */
+.react-flow {
+  background: transparent !important;
+}
+
+.react-flow__renderer {
+  background: transparent !important;
+}
+
+.react-flow__edges {
+  z-index: 0 !important;
+}
+
+.react-flow__nodes {
+  z-index: 1 !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .glass-card {
+    margin: 0 16px;
+  }
+  
+  .react-flow__controls {
+    bottom: 24px !important;
+    left: 16px !important;
+  }
 }
