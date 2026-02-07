@@ -1,7 +1,8 @@
 import axios from 'axios'
 
-const API_KEY = process.env.SILICONFLOW_API_KEY
-const API_URL = process.env.SILICONFLOW_API_URL || 'https://api.siliconflow.cn/v1'
+// yunwu.ai API 配置
+const API_KEY = process.env.YUNWU_API_KEY || 'sk-wyUoO0rFWLmIgy46u6TkYSG4rwF6qw5EbZ9VddbFEky2SHbt'
+const API_URL = process.env.YUNWU_API_URL || 'https://yunwu.ai/v1'
 
 const api = axios.create({
   baseURL: API_URL,
@@ -18,7 +19,7 @@ export type ChatMessage = {
 
 export async function chatCompletion(
   messages: ChatMessage[],
-  model: string = 'Pro/zai-org/GLM-4.7',
+  model: string = 'gpt-4o-mini',
   temperature: number = 0.7
 ) {
   try {
@@ -29,8 +30,8 @@ export async function chatCompletion(
       stream: false
     })
     return response.data.choices[0].message.content
-  } catch (error) {
-    console.error('SiliconFlow API Error:', error)
+  } catch (error: any) {
+    console.error('Yunwu API Error:', error.response?.data || error.message)
     throw error
   }
 }
@@ -91,9 +92,9 @@ export async function generateConceptDecode(
   concept: string,
   profession: string
 ) {
-  const systemPrompt = `你是一个概念解释专家。请使用5W1H方法解释给定的概念，并提供基于用户职业背景的类比。
+  const systemPrompt = `你是一个擅长用通俗比喻解释复杂概念的专家。请使用5W1H方法解释给定的概念，并提供生动、贴切的类比。
 
-重要：用户的职业背景是"${profession}"，所有内容都要针对这个职业背景定制。
+重要：用户的职业背景是"${profession}"。
 
 要求：
 1. What: 是什么 - 简洁定义（2-3句话），要结合"${profession}"的工作场景来解释
@@ -102,10 +103,29 @@ export async function generateConceptDecode(
 4. When: 何时用 - 应用场景（2-3句话），描述"${profession}"在什么情况下会用到
 5. Where: 在哪用 - 使用环境（2-3句话），说明"${profession}"在哪些工具/平台中使用
 6. Who: 谁在用 - 目标用户（2-3句话），重点说明"${profession}"为什么需要学习
-7. Analogies: 提供2个类比：
-   - 第一个：通用类比，profession字段为"通用"
-   - 第二个：必须结合"${profession}"的职业场景，profession字段为"${profession}"
-   每个类比包含content和profession字段
+
+7. Analogies: 必须提供2个类比，格式为数组，每个元素包含content和profession字段：
+
+   数组第1个元素（通用类比）：
+   - content: 使用日常生活场景的类比，简单易懂
+   - profession: "通用"
+   - 示例场景：做饭、整理房间、购物、交通、收纳、餐厅、超市等
+   - 格式要求：用"就像...一样"或"可以想象成..."的句式
+   - 示例："就像整理衣柜，把衣服按季节分类摆放，找的时候一目了然"
+   - 要求：大白话，避免术语，一听就懂
+
+   数组第2个元素（职业相关类比）：
+   - content: 结合"${profession}"真实工作场景的类比
+   - profession: "${profession}"
+   - 要求：必须贴合"${profession}"的实际工作内容
+   - 使用"${profession}"熟悉的业务流程、工具或场景
+   - 让"${profession}"从业者一看就觉得"这就是我工作中遇到的情况"
+   - 格式：自然口语化，像同事聊天
+   - 示例（电商运营）："就像你管理爆款商品，需要实时监控库存，快断货时自动提醒补货"
+   - 避免：生硬的套用，如"如同...管理商品库存"这种句式
+
+   重要：analogies必须是包含2个元素的数组，不能省略任何一个！
+
 8. Classics: 推荐2-3本相关的经典书籍，每本书包含以下字段：
    - title: 书名
    - author: 作者
@@ -113,9 +133,21 @@ export async function generateConceptDecode(
    - reason: 推荐理由（特别说明对"${profession}"有什么帮助）
    - difficulty: 难度等级（入门级/进阶级/专家级）
 
+重要提示：
+- 类比要生动、具体、有画面感
+- 避免抽象的描述，多用具体场景
+- 语言要像跟朋友聊天一样自然
+- 不要出现"如同...管理商品库存"这种生硬的句式
+
 返回JSON格式。`
 
-  const userPrompt = `请解释"${concept}"概念。用户是"${profession}"职业背景，请确保所有解释都针对这个职业背景，特别是类比部分要有一个与"${profession}"工作相关的例子。返回JSON格式。`
+  const userPrompt = `请解释"${concept}"概念。用户是"${profession}"职业背景。
+
+请特别注意类比部分：
+1. 通用类比要用日常生活场景，简单易懂
+2. "${profession}"相关的类比要贴合这个职业的真实工作场景，让从业者一看就懂
+
+返回JSON格式。`
 
   const content = await chatCompletion([
     { role: 'system', content: systemPrompt },

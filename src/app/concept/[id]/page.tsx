@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
   BookOpen, 
   Lightbulb, 
@@ -16,10 +16,13 @@ import {
   Loader2,
   AlertCircle,
   RefreshCw,
-  CheckCircle
+  CheckCircle,
+  Sparkles,
+  X
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import FiveWOneHCard from './FiveWOneHCard'
 
 interface ClassicBook {
   title: string
@@ -56,6 +59,79 @@ function ConceptContent() {
   const [userProfession, setUserProfession] = useState<string>('初学者')
   const [isMastered, setIsMastered] = useState(false)
   const [isMarking, setIsMarking] = useState(false)
+  
+  // 类比解释弹窗状态
+  const [analogyModal, setAnalogyModal] = useState<{
+    isOpen: boolean
+    analogy: { id: string; content: string; profession: string } | null
+    detail: string
+    isLoading: boolean
+    error: string
+  }>({
+    isOpen: false,
+    analogy: null,
+    detail: '',
+    isLoading: false,
+    error: ''
+  })
+
+  // 生成类比详细解释
+  const generateAnalogyDetail = async (analogy: { id: string; content: string; profession: string }) => {
+    setAnalogyModal(prev => ({
+      ...prev,
+      isOpen: true,
+      analogy,
+      isLoading: true,
+      error: ''
+    }))
+
+    try {
+      const response = await fetch('/api/analogy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          concept: conceptName,
+          analogyContent: analogy.content,
+          profession: analogy.profession,
+          isPersonalized: analogy.profession !== '通用'
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('生成解释失败')
+      }
+
+      const result = await response.json()
+
+      if (result.success) {
+        setAnalogyModal(prev => ({
+          ...prev,
+          detail: result.content,
+          isLoading: false
+        }))
+      } else {
+        throw new Error(result.error || '生成失败')
+      }
+    } catch (err: any) {
+      console.error('Error generating analogy detail:', err)
+      setAnalogyModal(prev => ({
+        ...prev,
+        error: err.message || '生成失败，请重试',
+        isLoading: false
+      }))
+    }
+  }
+
+  // 关闭类比弹窗
+  const closeAnalogyModal = () => {
+    setAnalogyModal({
+      isOpen: false,
+      analogy: null,
+      detail: '',
+      isLoading: false,
+      error: ''
+    })
+  }
 
   // 调用 AI API 生成概念解码
   const generateConceptWithAI = async () => {
@@ -83,37 +159,36 @@ function ConceptContent() {
       // 解析 AI 返回的数据
       const data = result.data
       
-      // 格式化类比数据
-      const analogies = []
+      // 格式化类比数据 - 完全依赖 AI 生成
+      let analogies = []
       if (data.analogies && Array.isArray(data.analogies)) {
-        analogies.push(...data.analogies.map((a: any, i: number) => ({
+        analogies = data.analogies.map((a: any, i: number) => ({
           id: `analogy-${i}`,
-          content: typeof a === 'string' ? a : a.content,
+          content: typeof a === 'string' ? a : (a.content || '暂无类比'),
           profession: typeof a === 'string' ? '通用' : (a.profession || '通用'),
           is_selected: false
-        })))
+        }))
       }
       
-      // 检查是否已经有针对职业背景的类比
-      const hasPersonalizedAnalogy = analogies.some((a: any) => 
-        a.profession && a.profession !== '通用'
-      )
+      // 确保至少有两个类比：一个通用、一个职业相关
+      const hasGeneralAnalogy = analogies.some((a: any) => a.profession === '通用')
+      const hasPersonalizedAnalogy = analogies.some((a: any) => a.profession !== '通用')
       
-      // 如果没有返回类比，或者没有针对职业背景的类比，添加默认类比
-      if (analogies.length === 0) {
-        analogies.push({
-          id: 'default-1',
-          content: `${conceptName}就像一个容器，可以存储和操作数据。`,
+      // 如果没有通用类比，添加一个占位提示
+      if (!hasGeneralAnalogy) {
+        analogies.unshift({
+          id: 'analogy-general',
+          content: '就像整理房间，把物品分类摆放，需要时能快速找到',
           profession: '通用',
           is_selected: false
         })
       }
       
-      // 如果没有针对职业背景的类比，添加一个
+      // 如果没有职业相关类比，添加一个占位提示
       if (!hasPersonalizedAnalogy) {
         analogies.push({
-          id: `analogy-${analogies.length}`,
-          content: `如同${userProfession}管理商品库存，${conceptName}帮助你系统化地组织和调用资源。`,
+          id: 'analogy-personal',
+          content: `结合${userProfession}工作场景的类比正在生成中...`,
           profession: userProfession,
           is_selected: false
         })
@@ -502,74 +577,25 @@ function ConceptContent() {
           <p className="text-gray-400">概念解码器</p>
         </motion.div>
 
-        {/* 5W1H Section */}
+        {/* 5W1H Section - 翻卡版本 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="glass-card p-6 mb-6"
         >
-          <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-            <BookOpen className="w-5 h-5 mr-2 text-[#e8a87c]" />
-            5W1H 全维定义
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-4">
-              <div className="p-4 rounded-lg bg-white/5">
-                <div className="flex items-center space-x-2 mb-2">
-                  <span className="text-[#e8a87c] font-bold">What</span>
-                  <span className="text-gray-400 text-sm">是什么</span>
-                </div>
-                <p className="text-gray-300">{conceptData.what}</p>
-              </div>
-              
-              <div className="p-4 rounded-lg bg-white/5">
-                <div className="flex items-center space-x-2 mb-2">
-                  <span className="text-[#e8a87c] font-bold">Why</span>
-                  <span className="text-gray-400 text-sm">为什么</span>
-                </div>
-                <p className="text-gray-300">{conceptData.why}</p>
-              </div>
-              
-              <div className="p-4 rounded-lg bg-white/5">
-                <div className="flex items-center space-x-2 mb-2">
-                  <span className="text-[#e8a87c] font-bold">How</span>
-                  <span className="text-gray-400 text-sm">怎么用</span>
-                </div>
-                <p className="text-gray-300">{conceptData.how}</p>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="p-4 rounded-lg bg-white/5">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Clock className="w-4 h-4 text-[#85dcb8]" />
-                  <span className="text-[#85dcb8] font-bold">When</span>
-                  <span className="text-gray-400 text-sm">何时用</span>
-                </div>
-                <p className="text-gray-300">{conceptData.when}</p>
-              </div>
-              
-              <div className="p-4 rounded-lg bg-white/5">
-                <div className="flex items-center space-x-2 mb-2">
-                  <MapPin className="w-4 h-4 text-[#85dcb8]" />
-                  <span className="text-[#85dcb8] font-bold">Where</span>
-                  <span className="text-gray-400 text-sm">在哪用</span>
-                </div>
-                <p className="text-gray-300">{conceptData.where}</p>
-              </div>
-              
-              <div className="p-4 rounded-lg bg-white/5">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Users className="w-4 h-4 text-[#85dcb8]" />
-                  <span className="text-[#85dcb8] font-bold">Who</span>
-                  <span className="text-gray-400 text-sm">谁在用</span>
-                </div>
-                <p className="text-gray-300">{conceptData.who}</p>
-              </div>
-            </div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-white flex items-center">
+              <BookOpen className="w-5 h-5 mr-2 text-[#e8a87c]" />
+              5W1H 全维定义
+            </h2>
+            <span className="text-xs text-gray-500">点击卡片查看详细解释</span>
           </div>
+          
+          <FiveWOneHCard 
+            data={conceptData} 
+            conceptName={conceptName}
+          />
         </motion.div>
 
         {/* Analogies Section */}
@@ -579,41 +605,72 @@ function ConceptContent() {
           transition={{ delay: 0.2 }}
           className="glass-card p-6 mb-6"
         >
-          <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-            <Lightbulb className="w-5 h-5 mr-2 text-[#e8a87c]" />
-            类比解释（选择最易懂的一个）
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-white flex items-center">
+              <Lightbulb className="w-5 h-5 mr-2 text-[#e8a87c]" />
+              类比解释
+            </h2>
+            <span className="text-xs text-gray-500">点击卡片查看通俗解读</span>
+          </div>
           
           <div className="space-y-3">
-            {conceptData.analogies.map((analogy) => (
-              <button
-                key={analogy.id}
-                onClick={() => setSelectedAnalogy(analogy.id)}
-                className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
-                  selectedAnalogy === analogy.id
-                    ? 'border-[#e8a87c] bg-[#e8a87c]/10'
-                    : 'border-white/10 bg-white/5 hover:border-white/20'
-                }`}
-              >
-                <div className="flex items-start space-x-3">
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                    selectedAnalogy === analogy.id
-                      ? 'border-[#e8a87c] bg-[#e8a87c]'
-                      : 'border-gray-400'
-                  }`}>
-                    {selectedAnalogy === analogy.id && (
-                      <div className="w-2 h-2 rounded-full bg-white" />
-                    )}
+            {/* 先显示用户职业背景的类比 */}
+            {conceptData.analogies
+              .filter(a => a.profession !== '通用')
+              .map((analogy) => (
+                <motion.button
+                  key={analogy.id}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={() => generateAnalogyDetail(analogy)}
+                  className="w-full p-4 rounded-xl border-2 text-left transition-all border-[#85dcb8]/30 bg-gradient-to-r from-[#85dcb8]/10 to-transparent hover:border-[#85dcb8]/50 group"
+                >
+                  <div className="flex items-start space-x-3">
+                    <div className="w-10 h-10 rounded-lg bg-[#85dcb8]/20 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xl">👤</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="text-sm font-medium text-[#85dcb8]">基于您的{analogy.profession}背景</span>
+                        <Sparkles className="w-3 h-3 text-[#e8a87c] opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                      <p className="text-gray-200">{analogy.content}</p>
+                      <span className="text-xs text-gray-500 mt-2 flex items-center group-hover:text-[#e8a87c] transition-colors">
+                        点击查看通俗解读 →
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-gray-300">{analogy.content}</p>
-                    <span className="text-sm text-[#85dcb8] mt-1 block">
-                      （基于您的{analogy.profession}背景）
-                    </span>
+                </motion.button>
+              ))}
+            
+            {/* 再显示通用背景的类比 */}
+            {conceptData.analogies
+              .filter(a => a.profession === '通用')
+              .map((analogy) => (
+                <motion.button
+                  key={analogy.id}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={() => generateAnalogyDetail(analogy)}
+                  className="w-full p-4 rounded-xl border-2 text-left transition-all border-white/10 bg-white/5 hover:border-white/30 group"
+                >
+                  <div className="flex items-start space-x-3">
+                    <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xl">🌍</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="text-sm font-medium text-gray-400">通用解释</span>
+                        <Sparkles className="w-3 h-3 text-[#e8a87c] opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                      <p className="text-gray-300">{analogy.content}</p>
+                      <span className="text-xs text-gray-500 mt-2 flex items-center group-hover:text-[#e8a87c] transition-colors">
+                        点击查看通俗解读 →
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </button>
-            ))}
+                </motion.button>
+              ))}
           </div>
         </motion.div>
 
@@ -721,6 +778,124 @@ function ConceptContent() {
             <span>返回知识图</span>
           </button>
         </motion.div>
+
+        {/* 类比解释弹窗 */}
+        <AnimatePresence>
+          {analogyModal.isOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+              onClick={closeAnalogyModal}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="relative w-full max-w-2xl max-h-[80vh] overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="rounded-2xl border border-white/20 overflow-hidden bg-gradient-to-br from-[#1a1a2e] to-[#16213e]">
+                  {/* 头部 */}
+                  <div className="p-6 border-b border-white/10 bg-[#e8a87c]/10">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 rounded-xl bg-[#e8a87c]/20 flex items-center justify-center">
+                          <Lightbulb className="w-6 h-6 text-[#e8a87c]" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-white">
+                            通俗解读
+                          </h3>
+                          <span className="text-sm text-gray-400">
+                            {analogyModal.analogy?.profession !== '通用' 
+                              ? `基于您的${analogyModal.analogy?.profession}背景` 
+                              : '通用解释'}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={closeAnalogyModal}
+                        className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                      >
+                        <X className="w-5 h-5 text-gray-400" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 内容区域 */}
+                  <div className="p-6 overflow-y-auto max-h-[50vh]">
+                    {analogyModal.isLoading ? (
+                      <div className="flex flex-col items-center justify-center py-12">
+                        <Loader2 className="w-8 h-8 text-[#e8a87c] animate-spin mb-4" />
+                        <p className="text-gray-400">AI 正在生成通俗解读...</p>
+                        <p className="text-gray-500 text-sm mt-2">用大白话讲清楚这个概念</p>
+                      </div>
+                    ) : analogyModal.error ? (
+                      <div className="text-center py-12">
+                        <p className="text-red-400 mb-4">{analogyModal.error}</p>
+                        <button
+                          onClick={() => analogyModal.analogy && generateAnalogyDetail(analogyModal.analogy)}
+                          className="px-4 py-2 bg-[#e8a87c]/20 text-[#e8a87c] rounded-lg hover:bg-[#e8a87c]/30 transition-colors flex items-center space-x-2 mx-auto"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                          <span>重新生成</span>
+                        </button>
+                      </div>
+                    ) : analogyModal.detail ? (
+                      <div className="prose prose-invert max-w-none">
+                        {analogyModal.detail.split('\n').map((line, index) => {
+                          const trimmedLine = line.trim()
+                          if (trimmedLine.startsWith('### ')) {
+                            return <h4 key={index} className="text-lg font-bold text-[#e8a87c] mt-6 mb-3">{trimmedLine.replace('### ', '')}</h4>
+                          }
+                          if (trimmedLine.startsWith('## ')) {
+                            return <h3 key={index} className="text-xl font-bold text-white mt-8 mb-4">{trimmedLine.replace('## ', '')}</h3>
+                          }
+                          if (trimmedLine.startsWith('- ')) {
+                            return (
+                              <li key={index} className="text-gray-300 text-sm flex items-start ml-4 mb-2">
+                                <span className="text-[#e8a87c] mr-2">•</span>
+                                <span dangerouslySetInnerHTML={{ 
+                                  __html: trimmedLine.substring(2).replace(/\*\*(.+?)\*\*/g, '<strong class="text-[#e8a87c]">$1</strong>') 
+                                }} />
+                              </li>
+                            )
+                          }
+                          if (trimmedLine) {
+                            return (
+                              <p key={index} className="text-gray-300 text-sm mb-3 leading-relaxed">
+                                <span dangerouslySetInnerHTML={{ 
+                                  __html: trimmedLine.replace(/\*\*(.+?)\*\*/g, '<strong class="text-[#e8a87c]">$1</strong>') 
+                                }} />
+                              </p>
+                            )
+                          }
+                          return null
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {/* 底部 */}
+                  <div className="p-4 border-t border-white/10 bg-white/5 flex justify-between items-center">
+                    <span className="text-xs text-gray-500">
+                      类比：{analogyModal.analogy?.content.substring(0, 30)}...
+                    </span>
+                    <button
+                      onClick={closeAnalogyModal}
+                      className="px-4 py-2 rounded-lg text-sm font-medium bg-[#e8a87c]/20 text-[#e8a87c] hover:bg-[#e8a87c]/30 transition-colors"
+                    >
+                      关闭
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )

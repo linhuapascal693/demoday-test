@@ -68,6 +68,7 @@ export default function NewsPage() {
   const loadNews = async () => {
     if (!user || !session) {
       setIsLoading(false)
+      setError('请先登录后查看资讯')
       return
     }
 
@@ -403,19 +404,33 @@ export default function NewsPage() {
         </div>
 
         {/* Empty State */}
-        {filteredNews.length === 0 && (
+        {filteredNews.length === 0 && !isLoading && (
           <div className="text-center py-12">
             <Newspaper className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400">
-              {filter === 'favorite' ? '暂无收藏的资讯' : '暂无相关资讯'}
-            </p>
-            {filter === 'all' && (
-              <button
-                onClick={handleGenerateNews}
-                className="btn-primary mt-4"
-              >
-                生成今日资讯
-              </button>
+            {!user ? (
+              <>
+                <p className="text-gray-400 mb-4">请先登录后查看个性化资讯</p>
+                <button
+                  onClick={() => window.location.href = '/login'}
+                  className="btn-primary"
+                >
+                  去登录
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-gray-400">
+                  {filter === 'favorite' ? '暂无收藏的资讯' : '暂无相关资讯'}
+                </p>
+                {filter === 'all' && (
+                  <button
+                    onClick={handleGenerateNews}
+                    className="btn-primary mt-4"
+                  >
+                    生成今日资讯
+                  </button>
+                )}
+              </>
             )}
           </div>
         )}

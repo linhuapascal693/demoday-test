@@ -117,32 +117,32 @@ const defaultNodes: Node[] = [
 
 const defaultEdges: Edge[] = [
   // Level 0 -> Level 1 (根节点到核心模块)
-  { id: 'e1', source: 'root', target: 'basics', animated: true, style: { stroke: '#e8a87c', strokeWidth: 3 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#e8a87c' } },
-  { id: 'e2', source: 'root', target: 'data-structures', animated: true, style: { stroke: '#e8a87c', strokeWidth: 3 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#e8a87c' } },
-  { id: 'e3', source: 'root', target: 'oop', animated: true, style: { stroke: '#e8a87c', strokeWidth: 3 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#e8a87c' } },
+  { id: 'e1', source: 'root', target: 'basics', sourceHandle: null, targetHandle: null, animated: true, style: { stroke: '#e8a87c', strokeWidth: 3 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#e8a87c' } },
+  { id: 'e2', source: 'root', target: 'data-structures', sourceHandle: null, targetHandle: null, animated: true, style: { stroke: '#e8a87c', strokeWidth: 3 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#e8a87c' } },
+  { id: 'e3', source: 'root', target: 'oop', sourceHandle: null, targetHandle: null, animated: true, style: { stroke: '#e8a87c', strokeWidth: 3 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#e8a87c' } },
   
   // Level 1 -> Level 2 (基础语法到知识点)
-  { id: 'e4', source: 'basics', target: 'variables', style: { stroke: '#85dcb8', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#85dcb8' } },
-  { id: 'e5', source: 'basics', target: 'operators', style: { stroke: '#85dcb8', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#85dcb8' } },
-  { id: 'e6', source: 'basics', target: 'control-flow', style: { stroke: '#85dcb8', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#85dcb8' } },
+  { id: 'e4', source: 'basics', target: 'variables', sourceHandle: null, targetHandle: null, style: { stroke: '#85dcb8', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#85dcb8' } },
+  { id: 'e5', source: 'basics', target: 'operators', sourceHandle: null, targetHandle: null, style: { stroke: '#85dcb8', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#85dcb8' } },
+  { id: 'e6', source: 'basics', target: 'control-flow', sourceHandle: null, targetHandle: null, style: { stroke: '#85dcb8', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#85dcb8' } },
   
   // Level 1 -> Level 2 (数据结构到知识点)
-  { id: 'e7', source: 'data-structures', target: 'list-dict', style: { stroke: '#85dcb8', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#85dcb8' } },
-  { id: 'e8', source: 'data-structures', target: 'tuple-set', style: { stroke: '#85dcb8', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#85dcb8' } },
-  { id: 'e9', source: 'data-structures', target: 'comprehension', style: { stroke: '#85dcb8', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#85dcb8' } },
+  { id: 'e7', source: 'data-structures', target: 'list-dict', sourceHandle: null, targetHandle: null, style: { stroke: '#85dcb8', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#85dcb8' } },
+  { id: 'e8', source: 'data-structures', target: 'tuple-set', sourceHandle: null, targetHandle: null, style: { stroke: '#85dcb8', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#85dcb8' } },
+  { id: 'e9', source: 'data-structures', target: 'comprehension', sourceHandle: null, targetHandle: null, style: { stroke: '#85dcb8', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#85dcb8' } },
   
   // Level 1 -> Level 2 (面向对象到知识点)
-  { id: 'e10', source: 'oop', target: 'class-object', style: { stroke: '#85dcb8', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#85dcb8' } },
-  { id: 'e11', source: 'oop', target: 'inheritance', style: { stroke: '#85dcb8', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#85dcb8' } },
-  { id: 'e12', source: 'oop', target: 'encapsulation', style: { stroke: '#85dcb8', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#85dcb8' } },
+  { id: 'e10', source: 'oop', target: 'class-object', sourceHandle: null, targetHandle: null, style: { stroke: '#85dcb8', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#85dcb8' } },
+  { id: 'e11', source: 'oop', target: 'inheritance', sourceHandle: null, targetHandle: null, style: { stroke: '#85dcb8', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#85dcb8' } },
+  { id: 'e12', source: 'oop', target: 'encapsulation', sourceHandle: null, targetHandle: null, style: { stroke: '#85dcb8', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#85dcb8' } },
   
   // Level 2 -> Level 3 (控制流到细节)
-  { id: 'e13', source: 'control-flow', target: 'functions', style: { stroke: '#94a3b8', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' } },
-  { id: 'e14', source: 'control-flow', target: 'modules', style: { stroke: '#94a3b8', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' } },
+  { id: 'e13', source: 'control-flow', target: 'functions', sourceHandle: null, targetHandle: null, style: { stroke: '#94a3b8', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' } },
+  { id: 'e14', source: 'control-flow', target: 'modules', sourceHandle: null, targetHandle: null, style: { stroke: '#94a3b8', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' } },
   
   // Level 2 -> Level 3 (其他到细节)
-  { id: 'e15', source: 'list-dict', target: 'file-io', style: { stroke: '#94a3b8', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' } },
-  { id: 'e16', source: 'class-object', target: 'exception', style: { stroke: '#94a3b8', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' } }
+  { id: 'e15', source: 'list-dict', target: 'file-io', sourceHandle: null, targetHandle: null, style: { stroke: '#94a3b8', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' } },
+  { id: 'e16', source: 'class-object', target: 'exception', sourceHandle: null, targetHandle: null, style: { stroke: '#94a3b8', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' } }
 ]
 
 function KnowledgeMapContent() {
@@ -344,6 +344,8 @@ function KnowledgeMapContent() {
           id: edge.id || `edge-${index}`,
           source: edge.source,
           target: edge.target,
+          sourceHandle: null,  // 使用默认 handle
+          targetHandle: null,  // 使用默认 handle
           animated: true,
           style: { stroke: '#e8a87c', strokeWidth: 2.5 },
           markerEnd: { type: MarkerType.ArrowClosed, color: '#e8a87c' }
